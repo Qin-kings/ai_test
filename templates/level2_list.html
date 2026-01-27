@@ -1,0 +1,23 @@
+<!-- templates/app/level2_list.html -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>二级功能列表</title>
+</head>
+<body>
+  <h2>二级功能列表</h2>
+
+  <ul>
+    {% for l2 in level2_list %}
+      <li>
+        <a href="{% url 'Generate_testcases:level2_detail' l2.id %}">
+          {{ l2.level1.name }} / {{ l2.name }}
+        </a>
+      </li>
+    {% empty %}
+      <li>暂无数据</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>

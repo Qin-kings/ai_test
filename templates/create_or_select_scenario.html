@@ -1,0 +1,457 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>创建或选择场景</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    h2 {
+      color: #555;
+      margin-top: 30px;
+      margin-bottom: 15px;
+    }
+    h3 {
+      color: #666;
+      margin-top: 20px;
+      margin-bottom: 10px;
+    }
+    .step {
+      background: #f9f9f9;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 4px solid #4CAF50;
+      border-radius: 4px;
+    }
+    .step.active {
+      background: #e8f5e9;
+      border-left-color: #2e7d32;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+    input[type="text"],
+    input[type="number"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .checkbox-group input[type="checkbox"] {
+      width: auto;
+      margin-right: 10px;
+    }
+    .seed-item {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .seed-item input[type="checkbox"] {
+      width: auto;
+      flex-shrink: 0;
+    }
+    .seed-text {
+      flex: 1;
+      color: #666;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .seed-n-input {
+      width: 80px !important;
+      flex-shrink: 0;
+    }
+    .seed-n-input:disabled {
+      background-color: #f5f5f5;
+      cursor: not-allowed;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button.secondary {
+      background-color: #2196F3;
+    }
+    button.secondary:hover {
+      background-color: #0b7dda;
+    }
+    .messages {
+      list-style: none;
+      padding: 0;
+      margin: 20px 0;
+    }
+    .messages li {
+      padding: 10px 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    .messages .success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .messages .error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .messages .info {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #2196F3;
+      text-decoration: none;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    .hidden {
+      display: none;
+    }
+    .info-text {
+      color: #666;
+      font-size: 13px;
+      margin-top: 5px;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="{% url 'Generate_testcases:level2_list' %}" class="back-link">← 返回列表</a>
+    <h1>创建或选择场景</h1>
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li class="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <!-- 步骤1：一级功能 -->
+    <div class="step {% if not level1 %}active{% endif %}" id="step1">
+      <h2>步骤1：创建或选择一级功能</h2>
+      <form method="post" id="form-step1">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="step1_level1"/>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" name="use_existing" id="use_existing_level1" 
+                   {% if level1_form.use_existing.value %}checked{% endif %}
+                   onchange="toggleExistingLevel1()">
+            <label for="use_existing_level1" style="display: inline; font-weight: normal;">
+              使用已存在的一级功能
+            </label>
+          </div>
+        </div>
+
+        <div id="create-level1-form">
+          <div class="form-group">
+            <label for="{{ level1_form.name.id_for_label }}">{{ level1_form.name.label }}</label>
+            {{ level1_form.name }}
+            {% if level1_form.name.errors %}
+              <div style="color: red; font-size: 12px;">{{ level1_form.name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ level1_form.code.id_for_label }}">{{ level1_form.code.label }}</label>
+            {{ level1_form.code }}
+            {% if level1_form.code.errors %}
+              <div style="color: red; font-size: 12px;">{{ level1_form.code.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div id="select-level1-form" style="display: none;">
+          <div class="form-group">
+            <label for="{{ level1_form.existing_level1.id_for_label }}">
+              {{ level1_form.existing_level1.label }}
+            </label>
+            {{ level1_form.existing_level1 }}
+            {% if level1_form.existing_level1.errors %}
+              <div style="color: red; font-size: 12px;">{{ level1_form.existing_level1.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit">下一步：选择二级功能</button>
+      </form>
+    </div>
+
+    <!-- 步骤2：二级功能 -->
+    {% if level1 %}
+    <div class="step {% if level1 and not level2 %}active{% endif %}" id="step2">
+      <h2>步骤2：创建或选择二级功能（场景）</h2>
+      <p><strong>当前一级功能：</strong>{{ level1.name }}</p>
+      
+      <form method="post" id="form-step2">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="step2_level2"/>
+        <input type="hidden" name="level1_id" value="{{ level1.id }}"/>
+        
+        <div class="form-group">
+          <div class="checkbox-group">
+            <input type="checkbox" name="use_existing" id="use_existing_level2"
+                   {% if level2_form.use_existing.value %}checked{% endif %}
+                   onchange="toggleExistingLevel2()">
+            <label for="use_existing_level2" style="display: inline; font-weight: normal;">
+              使用已存在的二级功能
+            </label>
+          </div>
+        </div>
+
+        <div id="create-level2-form">
+          <div class="form-group">
+            <label for="{{ level2_form.name.id_for_label }}">{{ level2_form.name.label }}</label>
+            {{ level2_form.name }}
+            {% if level2_form.name.errors %}
+              <div style="color: red; font-size: 12px;">{{ level2_form.name.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ level2_form.code.id_for_label }}">{{ level2_form.code.label }}</label>
+            {{ level2_form.code }}
+            {% if level2_form.code.errors %}
+              <div style="color: red; font-size: 12px;">{{ level2_form.code.errors }}</div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label for="{{ level2_form.prompt.id_for_label }}">{{ level2_form.prompt.label }}</label>
+            {{ level2_form.prompt }}
+            <div class="info-text">场景提示词：该二级功能（场景）的提示词，用于生成测试用例</div>
+            {% if level2_form.prompt.errors %}
+              <div style="color: red; font-size: 12px;">{{ level2_form.prompt.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div id="select-level2-form" style="display: none;">
+          <div class="form-group">
+            <label for="{{ level2_form.existing_level2.id_for_label }}">
+              {{ level2_form.existing_level2.label }}
+            </label>
+            {{ level2_form.existing_level2 }}
+            {% if level2_form.existing_level2.errors %}
+              <div style="color: red; font-size: 12px;">{{ level2_form.existing_level2.errors }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <button type="submit">下一步：选择种子并生成</button>
+      </form>
+    </div>
+    {% endif %}
+
+    <!-- 步骤3：选择种子并生成 -->
+    {% if level2 %}
+    <div class="step active" id="step3">
+      <h2>步骤3：选择种子并生成测试用例</h2>
+      <p><strong>当前场景：</strong>{{ level2.level1.name }} / {{ level2.name }}</p>
+      {% if level2.prompt %}
+        <p><strong>场景提示词：</strong><em>{{ level2.prompt|truncatewords:20 }}</em></p>
+      {% else %}
+        <p style="color: #999;"><em>该场景暂无提示词，建议在步骤2中设置</em></p>
+      {% endif %}
+
+      <form method="post" id="form-step3">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="step3_generate"/>
+        <input type="hidden" name="level2_id" value="{{ level2.id }}"/>
+
+        <h3>选择种子样例</h3>
+        {% if seed_list %}
+          <div id="seeds-list">
+            {% for seed_info in seed_list %}
+              <div class="seed-item">
+                <input type="checkbox" 
+                       name="{{ seed_info.field_name }}" 
+                       id="id_{{ seed_info.field_name }}"
+                       class="seed-checkbox"
+                       onchange="toggleSeedInput('{{ seed_info.n_field_name }}')">
+                <div class="seed-text">
+                  <strong>种子 #{{ seed_info.id }}：</strong>
+                  {{ seed_info.text|linebreaksbr|truncatewords:30 }}
+                </div>
+                <label for="id_{{ seed_info.n_field_name }}" style="display: inline; margin-right: 5px;">生成数量：</label>
+                <input type="number" 
+                       name="{{ seed_info.n_field_name }}" 
+                       id="id_{{ seed_info.n_field_name }}"
+                       class="seed-n-input"
+                       min="1" 
+                       max="50" 
+                       value="5"
+                       disabled>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p style="color: #999;">该二级功能下暂无种子样例，请先添加种子样例。</p>
+        {% endif %}
+
+        <h3>生成参数</h3>
+        {% if session_form %}
+        <div class="form-group">
+          <label for="{{ session_form.prompt.id_for_label }}">{{ session_form.prompt.label }}</label>
+          {{ session_form.prompt }}
+          <div class="info-text">可选：会话级别的提示词（会覆盖场景提示词）</div>
+          {% if session_form.prompt.errors %}
+            <div style="color: red; font-size: 12px;">{{ session_form.prompt.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ session_form.temperature.id_for_label }}">{{ session_form.temperature.label }}</label>
+          {{ session_form.temperature }}
+          {% if session_form.temperature.errors %}
+            <div style="color: red; font-size: 12px;">{{ session_form.temperature.errors }}</div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ session_form.top_p.id_for_label }}">{{ session_form.top_p.label }}</label>
+          {{ session_form.top_p }}
+          {% if session_form.top_p.errors %}
+            <div style="color: red; font-size: 12px;">{{ session_form.top_p.errors }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <button type="submit">生成测试用例</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    // 切换一级功能的创建/选择模式
+    function toggleExistingLevel1() {
+      const checkbox = document.getElementById('use_existing_level1');
+      const createForm = document.getElementById('create-level1-form');
+      const selectForm = document.getElementById('select-level1-form');
+      
+      if (checkbox.checked) {
+        createForm.style.display = 'none';
+        selectForm.style.display = 'block';
+      } else {
+        createForm.style.display = 'block';
+        selectForm.style.display = 'none';
+      }
+    }
+
+    // 切换二级功能的创建/选择模式
+    function toggleExistingLevel2() {
+      const checkbox = document.getElementById('use_existing_level2');
+      const createForm = document.getElementById('create-level2-form');
+      const selectForm = document.getElementById('select-level2-form');
+      
+      if (checkbox && checkbox.checked) {
+        if (createForm) createForm.style.display = 'none';
+        if (selectForm) selectForm.style.display = 'block';
+      } else {
+        if (createForm) createForm.style.display = 'block';
+        if (selectForm) selectForm.style.display = 'none';
+      }
+    }
+
+    // 切换种子数量输入框的启用/禁用状态
+    function toggleSeedInput(nFieldName) {
+      const checkbox = document.querySelector(`input[name="${nFieldName.replace('_n', '')}"]`);
+      const nInput = document.getElementById(`id_${nFieldName}`);
+      
+      if (checkbox && nInput) {
+        if (checkbox.checked) {
+          nInput.disabled = false;
+          nInput.focus();
+        } else {
+          nInput.disabled = true;
+        }
+      }
+    }
+
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', function() {
+      // 初始化一级功能表单状态
+      toggleExistingLevel1();
+      
+      // 初始化二级功能表单状态（如果存在）
+      if (document.getElementById('use_existing_level2')) {
+        toggleExistingLevel2();
+      }
+
+      // 初始化所有种子复选框状态
+      document.querySelectorAll('.seed-checkbox').forEach(function(checkbox) {
+        const nFieldName = checkbox.name + '_n';
+        toggleSeedInput(nFieldName);
+      });
+    });
+
+    // 表单提交前验证
+    document.getElementById('form-step3')?.addEventListener('submit', function(e) {
+      const checkedSeeds = document.querySelectorAll('.seed-checkbox:checked');
+      if (checkedSeeds.length === 0) {
+        e.preventDefault();
+        alert('请至少选择一个种子样例！');
+        return false;
+      }
+    });
+  </script>
+</body>
+</html>

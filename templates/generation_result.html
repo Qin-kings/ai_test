@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试用例生成结果 - {{ level2.level1.name }} / {{ level2.name }}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .header h1 {
+      font-size: 24px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .breadcrumb {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .breadcrumb a {
+      color: #2196F3;
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      text-decoration: underline;
+    }
+
+    .scenario-info {
+      background: #fff9e6;
+      border-left: 4px solid #ff9800;
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+
+    .scenario-info h3 {
+      font-size: 14px;
+      color: #e65100;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .scenario-info p {
+      font-size: 14px;
+      color: #666;
+      white-space: pre-wrap;
+    }
+
+    .seed-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+
+    .seed-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .seed-icon {
+      background: #4CAF50;
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .seed-content {
+      flex: 1;
+    }
+
+    .seed-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .seed-text {
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      color: #333;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .generated-list {
+      margin-top: 16px;
+    }
+
+    .generated-item {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+      position: relative;
+      transition: all 0.2s;
+    }
+
+    .generated-item:hover {
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .item-number {
+      background: #2196F3;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .item-actions {
+      display: none;
+      gap: 8px;
+    }
+
+    .edit-mode .item-actions {
+      display: flex;
+    }
+
+    .btn {
+      padding: 6px 16px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .btn-edit {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-edit:hover {
+      background: #1976D2;
+    }
+
+    .btn-regenerate {
+      background: #ff9800;
+      color: white;
+    }
+
+    .btn-regenerate:hover {
+      background: #f57c00;
+    }
+
+    .btn-save-item {
+      background: #4CAF50;
+      color: white;
+      display: none;
+    }
+
+    .btn-save-item:hover {
+      background: #45a049;
+    }
+
+    .btn-cancel-item {
+      background: #9e9e9e;
+      color: white;
+      display: none;
+    }
+
+    .btn-cancel-item:hover {
+      background: #757575;
+    }
+
+    .item-content {
+      font-size: 14px;
+      color: #333;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      padding: 12px;
+      background: white;
+      border-radius: 4px;
+      min-height: 60px;
+    }
+
+    .item-edit-box {
+      display: none;
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      border: 2px solid #2196F3;
+      border-radius: 4px;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.8;
+      resize: vertical;
+    }
+
+    .item-edit-box:focus {
+      outline: none;
+      border-color: #1976D2;
+      box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+    }
+
+    .item-status {
+      display: none;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .status-edited {
+      background: #e3f2fd;
+      color: #1976D2;
+      border-left: 3px solid #2196F3;
+    }
+
+    .status-regenerated {
+      background: #fff3e0;
+      color: #e65100;
+      border-left: 3px solid #ff9800;
+    }
+
+    .bottom-toolbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+      padding: 16px 20px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-info {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-large {
+      padding: 12px 32px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .btn-toggle-edit {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-toggle-edit:hover {
+      background: #1976D2;
+    }
+
+    .btn-toggle-edit.active {
+      background: #9e9e9e;
+    }
+
+    .btn-toggle-edit.active:hover {
+      background: #757575;
+    }
+
+    .btn-save-modifications {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-save-modifications:hover {
+      background: #45a049;
+    }
+
+    .btn-final-save {
+      background: #2196F3;
+      color: white;
+    }
+
+    .btn-final-save:hover {
+      background: #1976D2;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+
+    /* 消息提示 */
+    .message {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 16px 24px;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .message-success {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .message-error {
+      background: #f44336;
+      color: white;
+    }
+
+    .message-info {
+      background: #2196F3;
+      color: white;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeOut {
+      to {
+        opacity: 0;
+        transform: translateX(400px);
+      }
+    }
+
+    .message.fade-out {
+      animation: fadeOut 0.3s ease-out forwards;
+    }
+
+    /* 加载状态 */
+    .regenerating {
+      opacity: 0.6;
+      pointer-events: none;
+      position: relative;
+    }
+
+    .regenerating::after {
+      content: "重新生成中...";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 152, 0, 0.9);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- 头部 -->
+    <div class="header">
+      <div class="breadcrumb">
+        <a href="{% url 'Generate_testcases:testcase_workspace' %}">← 返回工作台</a>
+      </div>
+      <h1>{{ level2.level1.name }} / {{ level2.name }}</h1>
+    </div>
+
+    <!-- 场景提示词 -->
+    {% if level2.prompt %}
+    <div class="scenario-info">
+      <h3>场景提示词</h3>
+      <p>{{ level2.prompt }}</p>
+    </div>
+    {% endif %}
+
+    <!-- 生成结果 -->
+    {% if session and items_by_seed %}
+      {% for seed, items in items_by_seed.items %}
+      <div class="seed-section">
+        <div class="seed-header">
+          <div class="seed-icon">{{ forloop.counter }}</div>
+          <div class="seed-content">
+            <div class="seed-label">种子测试用例 #{{ seed.id }}</div>
+            <div class="seed-text">{{ seed.text }}</div>
+          </div>
+        </div>
+
+        <div class="generated-list">
+          {% for item in items %}
+          <div class="generated-item" data-item-id="{{ item.id }}" data-original-text="{{ item.final_text }}">
+            <div class="item-header">
+              <span class="item-number">泛化用例 #{{ forloop.counter }}</span>
+              <div class="item-actions">
+                <button class="btn btn-edit" onclick="editItem({{ item.id }})">编辑</button>
+                <button class="btn btn-regenerate" onclick="regenerateItem({{ item.id }}, {{ seed.id }})">重新生成</button>
+                <button class="btn btn-save-item" onclick="saveItemEdit({{ item.id }})">保存</button>
+                <button class="btn btn-cancel-item" onclick="cancelItemEdit({{ item.id }})">取消</button>
+              </div>
+            </div>
+            <div class="item-content" id="content-{{ item.id }}">{{ item.final_text }}</div>
+            <textarea class="item-edit-box" id="edit-{{ item.id }}">{{ item.final_text }}</textarea>
+            <div class="item-status" id="status-{{ item.id }}"></div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">📋</div>
+      <p>暂无生成结果</p>
+    </div>
+    {% endif %}
+
+    <!-- 底部占位，避免被固定工具栏遮挡 -->
+    <div style="height: 80px;"></div>
+  </div>
+
+  <!-- 底部工具栏 -->
+  <div class="bottom-toolbar">
+    <div class="toolbar-info">
+      共 <strong id="totalCount">{{ total_count }}</strong> 条泛化用例
+      <span id="modifiedCount" style="display: none; margin-left: 16px; color: #ff9800;">
+        已修改 <strong>0</strong> 条
+      </span>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn btn-large btn-toggle-edit" id="toggleEditBtn" onclick="toggleEditMode()">
+        进入修改模式
+      </button>
+      <button class="btn btn-large btn-save-modifications" id="saveModificationsBtn" onclick="saveModifications()" style="display: none;">
+        保存修改
+      </button>
+      <button class="btn btn-large btn-final-save" id="finalSaveBtn" onclick="saveToFinalTable()">
+        保存泛化测试用例
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const csrfToken = '{{ csrf_token }}';
+    const sessionId = {{ session.id|default:'null' }};
+    let editMode = false;
+    let modifiedItems = new Map(); // 存储修改的内容
+
+    // 切换编辑模式
+    function toggleEditMode() {
+      editMode = !editMode;
+      const container = document.querySelector('.container');
+      const toggleBtn = document.getElementById('toggleEditBtn');
+      const saveModBtn = document.getElementById('saveModificationsBtn');
+      const finalSaveBtn = document.getElementById('finalSaveBtn');
+
+      if (editMode) {
+        // 进入修改模式
+        container.classList.add('edit-mode');
+        toggleBtn.textContent = '退出修改模式';
+        toggleBtn.classList.add('active');
+        saveModBtn.style.display = 'inline-block';  // 显示"保存修改"按钮
+        finalSaveBtn.style.display = 'none';  // 隐藏"保存泛化测试用例"按钮
+      } else {
+        // 退出修改模式
+        container.classList.remove('edit-mode');
+        toggleBtn.textContent = '进入修改模式';
+        toggleBtn.classList.remove('active');
+        saveModBtn.style.display = 'none';  // 隐藏"保存修改"按钮
+        finalSaveBtn.style.display = 'inline-block';  // 显示"保存泛化测试用例"按钮
+        
+        // 取消所有未保存的编辑
+        document.querySelectorAll('.generated-item').forEach(item => {
+          const itemId = item.dataset.itemId;
+          cancelItemEdit(itemId);
+        });
+      }
+    }
+
+    // 编辑单条用例
+    function editItem(itemId) {
+      const item = document.querySelector(`[data-item-id="${itemId}"]`);
+      const content = document.getElementById(`content-${itemId}`);
+      const editBox = document.getElementById(`edit-${itemId}`);
+      const actions = item.querySelector('.item-actions');
+
+      content.style.display = 'none';
+      editBox.style.display = 'block';
+      editBox.focus();
+
+      // 切换按钮
+      actions.querySelector('.btn-edit').style.display = 'none';
+      actions.querySelector('.btn-regenerate').style.display = 'none';
+      actions.querySelector('.btn-save-item').style.display = 'inline-block';
+      actions.querySelector('.btn-cancel-item').style.display = 'inline-block';
+    }
+
+    // 保存单条编辑（临时保存到内存）
+    function saveItemEdit(itemId) {
+      const item = document.querySelector(`[data-item-id="${itemId}"]`);
+      const content = document.getElementById(`content-${itemId}`);
+      const editBox = document.getElementById(`edit-${itemId}`);
+      const status = document.getElementById(`status-${itemId}`);
+      const actions = item.querySelector('.item-actions');
+
+      const newText = editBox.value.trim();
+      
+      if (!newText) {
+        showMessage('用例内容不能为空', 'error');
+        return;
+      }
+
+      // 更新显示
+      content.textContent = newText;
+      content.style.display = 'block';
+      editBox.style.display = 'none';
+
+      // 保存到本地状态
+      modifiedItems.set(itemId, {
+        type: 'edit',
+        text: newText,
+        original: item.dataset.originalText
+      });
+
+      // 显示状态
+      status.textContent = '✓ 已编辑（未保存到数据库）';
+      status.className = 'item-status status-edited';
+      status.style.display = 'block';
+
+      // 切换按钮
+      actions.querySelector('.btn-edit').style.display = 'inline-block';
+      actions.querySelector('.btn-regenerate').style.display = 'inline-block';
+      actions.querySelector('.btn-save-item').style.display = 'none';
+      actions.querySelector('.btn-cancel-item').style.display = 'none';
+
+      updateModifiedCount();
+    }
+
+    // 取消单条编辑
+    function cancelItemEdit(itemId) {
+      const item = document.querySelector(`[data-item-id="${itemId}"]`);
+      const content = document.getElementById(`content-${itemId}`);
+      const editBox = document.getElementById(`edit-${itemId}`);
+      const status = document.getElementById(`status-${itemId}`);
+      const actions = item.querySelector('.item-actions');
+
+      // 恢复原始文本
+      const modified = modifiedItems.get(itemId);
+      if (modified) {
+        editBox.value = modified.original;
+        modifiedItems.delete(itemId);
+        status.style.display = 'none';
+      } else {
+        editBox.value = content.textContent;
+      }
+
+      content.style.display = 'block';
+      editBox.style.display = 'none';
+
+      // 切换按钮
+      actions.querySelector('.btn-edit').style.display = 'inline-block';
+      actions.querySelector('.btn-regenerate').style.display = 'inline-block';
+      actions.querySelector('.btn-save-item').style.display = 'none';
+      actions.querySelector('.btn-cancel-item').style.display = 'none';
+
+      updateModifiedCount();
+    }
+
+    // 重新生成单条用例
+    async function regenerateItem(itemId, seedId) {
+      if (!confirm('确定要重新生成这条用例吗？原内容将被替换。')) {
+        return;
+      }
+
+      const item = document.querySelector(`[data-item-id="${itemId}"]`);
+      const content = document.getElementById(`content-${itemId}`);
+      const status = document.getElementById(`status-${itemId}`);
+
+      item.classList.add('regenerating');
+
+      try {
+        const response = await fetch('/Generate_testcases/api/regenerate-item/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({
+            item_id: itemId,
+            seed_id: seedId
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        // ⭐ 关键修复：更新DOM元素的data-item-id为新的item_id
+        const newItemId = data.item_id;
+        
+        // 更新所有相关的ID引用
+        item.setAttribute('data-item-id', newItemId);
+        content.id = `content-${newItemId}`;
+        document.getElementById(`edit-${itemId}`).id = `edit-${newItemId}`;
+        status.id = `status-${newItemId}`;
+        
+        // 更新按钮的onclick属性
+        const editBtn = item.querySelector('.btn-edit');
+        const regenBtn = item.querySelector('.btn-regenerate');
+        const saveBtn = item.querySelector('.btn-save-item');
+        const cancelBtn = item.querySelector('.btn-cancel-item');
+        
+        editBtn.setAttribute('onclick', `editItem(${newItemId})`);
+        regenBtn.setAttribute('onclick', `regenerateItem(${newItemId}, ${seedId})`);
+        saveBtn.setAttribute('onclick', `saveItemEdit(${newItemId})`);
+        cancelBtn.setAttribute('onclick', `cancelItemEdit(${newItemId})`);
+
+        // 更新显示内容
+        content.textContent = data.new_text;
+        document.getElementById(`edit-${newItemId}`).value = data.new_text;
+        
+        // 更新originalText
+        item.dataset.originalText = data.new_text;
+
+        // 保存到本地状态（使用新的itemId）
+        modifiedItems.delete(itemId);  // 删除旧的记录
+        modifiedItems.set(newItemId, {
+          type: 'regenerate',
+          text: data.new_text,
+          original: data.new_text
+        });
+
+        // 显示状态
+        status.textContent = '✓ 已重新生成（未保存到数据库）';
+        status.className = 'item-status status-regenerated';
+        status.style.display = 'block';
+
+        showMessage('重新生成成功', 'success');
+        updateModifiedCount();
+
+      } catch (error) {
+        showMessage('重新生成失败: ' + error.message, 'error');
+      } finally {
+        item.classList.remove('regenerating');
+      }
+    }
+
+    // 保存修改到 GenerationItem 表（临时工作区）
+    async function saveModifications() {
+      if (modifiedItems.size === 0) {
+        showMessage('没有需要保存的修改', 'info');
+        return;
+      }
+
+      if (!confirm(`确定要保存 ${modifiedItems.size} 条修改到临时工作区吗？`)) {
+        return;
+      }
+
+      const updates = [];
+      modifiedItems.forEach((value, itemId) => {
+        updates.push({
+          item_id: parseInt(itemId),
+          text: value.text,
+          type: value.type
+        });
+      });
+
+      try {
+        const response = await fetch('/Generate_testcases/api/save-all-edits/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            updates: updates
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        showMessage(`✅ 修改成功！已更新 ${data.saved_count} 条用例`, 'success');
+        
+        // 清空本地状态
+        modifiedItems.clear();
+        
+        // 隐藏所有状态标签
+        document.querySelectorAll('.item-status').forEach(el => {
+          el.style.display = 'none';
+        });
+
+        // 更新原始文本
+        updates.forEach(update => {
+          const item = document.querySelector(`[data-item-id="${update.item_id}"]`);
+          if (item) {
+            item.dataset.originalText = update.text;
+          }
+        });
+
+        updateModifiedCount();
+
+      } catch (error) {
+        showMessage('保存失败: ' + error.message, 'error');
+      }
+    }
+
+    // 保存到最终表 SavedCaseItem（正式库）
+    async function saveToFinalTable() {
+      if (!confirm('确定要将当前测试用例保存到最终库吗？\n\n这将创建一个正式版本，可用于测试执行。')) {
+        return;
+      }
+
+      // 弹出版本名称输入框
+      const versionTitle = prompt('请输入版本名称（可选）：', '');
+
+      try {
+        const response = await fetch('/Generate_testcases/api/save-to-final/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+          },
+          body: JSON.stringify({
+            session_id: sessionId,
+            title: versionTitle || '',
+            status: 'confirmed'
+          })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        showMessage(`🎉 ${data.message}`, 'success');
+        
+        // 2秒后可以选择跳转或刷新
+        setTimeout(() => {
+          if (confirm('保存成功！是否返回工作台？')) {
+            window.location.href = "{% url 'Generate_testcases:testcase_workspace' %}";
+          }
+        }, 2000);
+
+      } catch (error) {
+        showMessage('保存失败: ' + error.message, 'error');
+      }
+    }
+
+    // 更新修改计数
+    function updateModifiedCount() {
+      const countEl = document.getElementById('modifiedCount');
+      const count = modifiedItems.size;
+      
+      if (count > 0) {
+        countEl.style.display = 'inline';
+        countEl.querySelector('strong').textContent = count;
+      } else {
+        countEl.style.display = 'none';
+      }
+    }
+
+    // 显示消息
+    function showMessage(text, type = 'info') {
+      const message = document.createElement('div');
+      message.className = `message message-${type}`;
+      message.textContent = text;
+      document.body.appendChild(message);
+
+      setTimeout(() => {
+        message.classList.add('fade-out');
+        setTimeout(() => message.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

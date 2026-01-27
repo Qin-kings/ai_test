@@ -1,0 +1,16 @@
+# ========= 默认忽略一切 =========
+*
+
+# ========= 允许的文件 =========
+!.gitignore
+!README.md
+
+# ========= 允许的目录 =========
+!templates/
+!templates/**
+
+!PA_Project/
+!PA_Project/**
+
+!Generate_testcases/
+!Generate_testcases/**
