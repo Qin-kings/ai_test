@@ -487,17 +487,33 @@
       cursor: pointer;
     }
     
+    {#.select-all-btn {#}
+    {#  background: #2196F3;#}
+    {#  color: white;#}
+    {#  border: none;#}
+    {#  padding: 8px 16px;#}
+    {#  border-radius: 6px;#}
+    {#  font-size: 13px;#}
+    {#  cursor: pointer;#}
+    {#  transition: all 0.2s;#}
+    {#  margin-left: 0px;#}
+    
     .select-all-btn {
       background: #2196F3;
       color: white;
       border: none;
-      padding: 8px 16px;
+    
+      height: 32px;          /* ✅ 和 + 按钮一致 */
+      padding: 0 14px;       /* ❗ 只保留左右 padding */
+      line-height: 32px;     /* ✅ 文本垂直居中 */
+    
       border-radius: 6px;
       font-size: 13px;
       cursor: pointer;
       transition: all 0.2s;
-      margin-left: 8px;
+      margin-left: 0;
     }
+
     
     .select-all-btn:hover {
       background: #1976D2;
@@ -744,6 +760,11 @@
         opacity: 1;
       }
     }
+    .panel-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;         /* 控制“全选”和“+”间距 */
+    }
   </style>
 </head>
 <body>
@@ -801,13 +822,14 @@
     
     <!-- 右侧：种子测试用例和生成 -->
     <div class="panel seed-panel">
-      <div class="panel-header">
-        <h3>种子测试用例</h3>
-        <div>
-          <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()" disabled>全选</button>
-          <button class="add-btn" id="addSeedBtn" onclick="showAddSeedModal()" title="添加种子用例" disabled>+</button>
+        <div class="panel-header">
+          <h3>种子测试用例</h3>
+          <div class="panel-header-actions">
+            <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()" disabled>全选</button>
+            <button class="add-btn" id="addSeedBtn" onclick="showAddSeedModal()" title="添加种子用例" disabled>+</button>
+          </div>
         </div>
-      </div>
+
       
       <!-- 种子列表 -->
       <div class="panel-content" id="seedList">
