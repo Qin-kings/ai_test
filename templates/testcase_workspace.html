@@ -1,1227 +1,1236 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>测试用例工作台</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background: #f5f5f5;
-      height: 100vh;
-      overflow: hidden;
-    }
-    
-    .workspace-container {
-      display: flex;
-      height: calc(100vh - 60px);
-      gap: 0;
-      margin-top: 60px;
-    }
-    
-    .top-toolbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background: white;
-      border-bottom: 2px solid #e0e0e0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      z-index: 100;
-    }
-    
-    .top-toolbar h2 {
-      margin: 0;
-      font-size: 20px;
-      color: #333;
-    }
-    
-    .toolbar-actions {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .delete-mode-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .delete-mode-btn:hover {
-      background: #d32f2f;
-    }
-    
-    .delete-mode-btn.cancel-mode {
-      background: #9e9e9e;
-    }
-    
-    .delete-mode-btn.cancel-mode:hover {
-      background: #757575;
-    }
-    
-    .edit-mode-btn {
-      background: #2196F3;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-left: 10px;
-    }
-    
-    .edit-mode-btn:hover {
-      background: #1976D2;
-    }
-    
-    .edit-mode-btn.cancel-mode {
-      background: #9e9e9e;
-    }
-    
-    .edit-mode-btn.cancel-mode:hover {
-      background: #757575;
-    }
-    
-    .save-edit-btn {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: none;
-      margin-left: 10px;
-    }
-    
-    .save-edit-btn:hover {
-      background: #45a049;
-    }
-    
-    .save-edit-btn.show {
-      display: block;
-    }
-    
-    .confirm-delete-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: none;
-    }
-    
-    .confirm-delete-btn:hover {
-      background: #d32f2f;
-    }
-    
-    .confirm-delete-btn.show {
-      display: block;
-    }
-    
-    .panel {
-      background: white;
-      display: flex;
-      flex-direction: column;
-      border-right: 1px solid #e0e0e0;
-    }
-    
-    .panel-header {
-      padding: 16px 20px;
-      border-bottom: 2px solid #4CAF50;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fafafa;
-    }
-    
-    .panel-header h3 {
-      font-size: 16px;
-      font-weight: 600;
-      color: #333;
-    }
-    
-    .add-btn {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      font-size: 20px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s;
-    }
-    
-    .add-btn:hover {
-      background: #45a049;
-      transform: scale(1.1);
-    }
-    
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
-    
-    .list-item {
-      padding: 12px 16px;
-      margin-bottom: 4px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s;
-      border-left: 3px solid transparent;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .list-item-content {
-      flex: 1;
-    }
-    
-    .list-item-checkbox {
-      display: none;
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
-    
-    .delete-mode .list-item-checkbox {
-      display: block;
-    }
-    
-    .view-prompt-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      background: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 8px;
-      transition: all 0.2s;
-    }
-    
-    .view-prompt-btn:hover {
-      background: #1976D2;
-      transform: scale(1.1);
-    }
-    
-    .list-item:hover {
-      background: #f5f5f5;
-    }
-    
-    .list-item.active {
-      background: #e8f5e9;
-      border-left-color: #4CAF50;
-      font-weight: 500;
-    }
-    
-    .list-item-name {
-      font-size: 14px;
-      color: #333;
-      margin-bottom: 4px;
-      outline: none;
-      padding: 2px 6px;
-      border-radius: 3px;
-      transition: background-color 0.2s, box-shadow 0.2s;
-    }
-    
-    .list-item-name.editable {
-      cursor: text;
-    }
-    
-    .list-item-name.editable:hover {
-      background: #f5f5f5;
-    }
-    
-    .list-item-name.editable:focus {
-      background: #fff;
-      box-shadow: 0 0 0 2px #2196F3;
-    }
-    
-    .list-item-name.editing {
-      background: #e3f2fd;
-    }
-    
-    .list-item-meta {
-      font-size: 12px;
-      color: #999;
-    }
-    
-    /* 左侧面板 - 一级功能 */
-    .level1-panel {
-      width: 280px;
-      min-width: 280px;
-    }
-    
-    /* 中间面板 - 二级功能 */
-    .level2-panel {
-      width: 300px;
-      min-width: 300px;
-    }
-    
-    /* 右侧面板 - 种子和生成 */
-    .seed-panel {
-      flex: 1;
-      border-right: none;
-    }
-    
-    .seed-panel .panel-content {
-      padding: 0;
-    }
-    
-    .seed-table-container {
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-    }
-    
-    .seed-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      min-width: 900px;
-    }
-    
-    .seed-table thead {
-      position: sticky;
-      top: 0;
-      background: #fafafa;
-      z-index: 10;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    }
-    
-    .seed-table th {
-      padding: 12px 10px;
-      text-align: left;
-      font-weight: 600;
-      color: #333;
-      border-bottom: 2px solid #e0e0e0;
-      white-space: nowrap;
-    }
-    
-    .seed-table th:first-child {
-      width: 50px;
-      text-align: center;
-    }
-    
-    .seed-table th:nth-child(2) {
-      width: 60px;
-      text-align: center;
-    }
-    
-    .seed-table th:nth-child(3) {
-      min-width: 300px;
-    }
-    
-    .seed-table th:nth-child(4) {
-      width: 120px;
-      text-align: center;
-    }
-    
-    .seed-table th:nth-child(5) {
-      width: 180px;
-      text-align: center;
-    }
-    
-    .seed-table th:nth-child(6) {
-      width: 140px;
-      text-align: center;
-    }
-    
-    .seed-table tbody tr {
-      border-bottom: 1px solid #e0e0e0;
-      transition: background-color 0.2s;
-    }
-    
-    .seed-table tbody tr:hover {
-      background: #f9f9f9;
-    }
-    
-    .seed-table tbody tr.selected {
-      background: #e3f2fd !important;
-    }
-    
-    .seed-table td {
-      padding: 12px 10px;
-      vertical-align: middle;
-    }
-    
-    .seed-table .seed-number {
-      text-align: center;
-      font-weight: 500;
-      color: #666;
-    }
-    
-    .seed-table .seed-content {
-      color: #333;
-      line-height: 1.6;
-      max-width: 500px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      outline: none;
-      padding: 4px 6px;
-      border-radius: 3px;
-      transition: background-color 0.2s, box-shadow 0.2s;
-    }
-    
-    .seed-table .seed-content.editable {
-      cursor: text;
-    }
-    
-    .seed-table .seed-content.editable:hover {
-      background: #f0f0f0;
-    }
-    
-    .seed-table .seed-content.editable:focus {
-      background: #fff;
-      box-shadow: 0 0 0 2px #2196F3;
-    }
-    
-    .seed-table .seed-content.editing {
-      background: #e3f2fd;
-    }
-    
-    .seed-table .seed-quantity {
-      text-align: center;
-    }
-    
-    .seed-table .seed-quantity input {
-      width: 70px;
-      padding: 4px 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      text-align: center;
-      font-size: 13px;
-    }
-    
-    .seed-table .seed-actions {
-      text-align: center;
-    }
-    
-    .seed-action-btns {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      width: 140px;
-      margin: 0 auto;
-    }
-    
-    .seed-action-btn {
-      padding: 5px 8px;
-      border: 1px solid #ddd;
-      background: white;
-      border-radius: 4px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: #666;
-      white-space: nowrap;
-    }
-    
-    .seed-action-btn:hover {
-      background: #f5f5f5;
-      border-color: #2196F3;
-      color: #2196F3;
-    }
-    
-    .seed-action-btn.btn-generate {
-      border-color: #4CAF50;
-      color: #4CAF50;
-    }
-    
-    .seed-action-btn.btn-generate:hover {
-      background: #4CAF50;
-      color: white;
-    }
-    
-    .seed-action-btn.btn-delete {
-      border-color: #f44336;
-      color: #f44336;
-    }
-    
-    .seed-action-btn.btn-delete:hover {
-      background: #f44336;
-      color: white;
-    }
-    
-    .seed-table .seed-time {
-      text-align: center;
-      color: #999;
-      font-size: 12px;
-    }
-    
-    .seed-select-checkbox {
-      width: 18px;
-      height: 18px;
-      cursor: pointer;
-    }
-    
-    {#.select-all-btn {#}
-    {#  background: #2196F3;#}
-    {#  color: white;#}
-    {#  border: none;#}
-    {#  padding: 8px 16px;#}
-    {#  border-radius: 6px;#}
-    {#  font-size: 13px;#}
-    {#  cursor: pointer;#}
-    {#  transition: all 0.2s;#}
-    {#  margin-left: 0px;#}
-    
-    .select-all-btn {
-      background: #2196F3;
-      color: white;
-      border: none;
-    
-      height: 32px;          /* ✅ 和 + 按钮一致 */
-      padding: 0 14px;       /* ❗ 只保留左右 padding */
-      line-height: 32px;     /* ✅ 文本垂直居中 */
-    
-      border-radius: 6px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-left: 0;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试用例工作台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    
-    .select-all-btn:hover {
-      background: #1976D2;
-    }
-    
-    .generate-section {
-      background: white;
-      border-top: 2px solid #4CAF50;
-      padding: 20px;
-      position: sticky;
-      bottom: 0;
-    }
-    
-    .generate-params {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    
-    .param-group {
-      display: flex;
-      flex-direction: column;
-    }
-    
-    .param-group label {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 4px;
-    }
-    
-    .param-group input {
-      padding: 6px 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    
-    .generate-btn {
-      width: 100%;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .generate-btn:hover {
-      background: #45a049;
-    }
-    
-    .generate-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    .batch-delete-btn {
-      background: #f44336;
-      color: white;
-      border: none;
-      padding: 12px;
-      border-radius: 6px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      margin-left: 12px;
-    }
-    
-    .batch-delete-btn:hover {
-      background: #d32f2f;
-    }
-    
-    .batch-delete-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: #999;
-    }
-    
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 16px;
-    }
-    
-    /* Modal样式 */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .modal.show {
-      display: flex;
-    }
-    
-    .modal-content {
-      background: white;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 500px;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
-    
-    .modal-header {
-      padding: 20px;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .modal-header h3 {
-      font-size: 18px;
-      color: #333;
-    }
-    
-    .modal-close {
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: #999;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-    }
-    
-    .modal-body {
-      padding: 20px;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-group label {
-      display: block;
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 6px;
-      font-weight: 500;
-    }
-    
-    .form-group input,
-    .form-group textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 14px;
-      font-family: inherit;
-    }
-    
-    .form-group textarea {
-      resize: vertical;
-      min-height: 100px;
-    }
-    
-    .modal-footer {
-      padding: 16px 20px;
-      border-top: 1px solid #e0e0e0;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    
-    .btn {
-      padding: 10px 24px;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .btn-primary {
-      background: #4CAF50;
-      color: white;
-    }
-    
-    .btn-primary:hover {
-      background: #45a049;
-    }
-    
-    .btn-secondary {
-      background: #f5f5f5;
-      color: #666;
-    }
-    
-    .btn-secondary:hover {
-      background: #e0e0e0;
-    }
-    
-    .message {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      z-index: 2000;
-      display: none;
-    }
-    
-    .message.show {
-      display: block;
-      animation: slideIn 0.3s ease-out;
-    }
-    
-    .message.success {
-      background: #4CAF50;
-      color: white;
-    }
-    
-    .message.error {
-      background: #f44336;
-      color: white;
-    }
-    
-    @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-    .panel-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;         /* 控制“全选”和“+”间距 */
-    }
-  </style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .workspace-container {
+            display: flex;
+            height: calc(100vh - 60px);
+            gap: 0;
+            margin-top: 60px;
+        }
+
+        .top-toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: white;
+            border-bottom: 2px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+
+        .top-toolbar h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #333;
+        }
+
+        .toolbar-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-mode-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .delete-mode-btn:hover {
+            background: #d32f2f;
+        }
+
+        .delete-mode-btn.cancel-mode {
+            background: #9e9e9e;
+        }
+
+        .delete-mode-btn.cancel-mode:hover {
+            background: #757575;
+        }
+
+        .edit-mode-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 10px;
+        }
+
+        .edit-mode-btn:hover {
+            background: #1976D2;
+        }
+
+        .edit-mode-btn.cancel-mode {
+            background: #9e9e9e;
+        }
+
+        .edit-mode-btn.cancel-mode:hover {
+            background: #757575;
+        }
+
+        .save-edit-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+            margin-left: 10px;
+        }
+
+        .save-edit-btn:hover {
+            background: #45a049;
+        }
+
+        .save-edit-btn.show {
+            display: block;
+        }
+
+        .confirm-delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none;
+        }
+
+        .confirm-delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .confirm-delete-btn.show {
+            display: block;
+        }
+
+        .panel {
+            background: white;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .panel-header {
+            padding: 16px 20px;
+            border-bottom: 2px solid #4CAF50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafafa;
+        }
+
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .add-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            background: #45a049;
+            transform: scale(1.1);
+        }
+
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .list-item {
+            padding: 12px 16px;
+            margin-bottom: 4px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-item-content {
+            flex: 1;
+        }
+
+        .list-item-checkbox {
+            display: none;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .delete-mode .list-item-checkbox {
+            display: block;
+        }
+
+        .view-prompt-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 8px;
+            transition: all 0.2s;
+        }
+
+        .view-prompt-btn:hover {
+            background: #1976D2;
+            transform: scale(1.1);
+        }
+
+        .list-item:hover {
+            background: #f5f5f5;
+        }
+
+        .list-item.active {
+            background: #e8f5e9;
+            border-left-color: #4CAF50;
+            font-weight: 500;
+        }
+
+        .list-item-name {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 4px;
+            outline: none;
+            padding: 2px 6px;
+            border-radius: 3px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .list-item-name.editable {
+            cursor: text;
+        }
+
+        .list-item-name.editable:hover {
+            background: #f5f5f5;
+        }
+
+        .list-item-name.editable:focus {
+            background: #fff;
+            box-shadow: 0 0 0 2px #2196F3;
+        }
+
+        .list-item-name.editing {
+            background: #e3f2fd;
+        }
+
+        .list-item-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 左侧面板 - 一级功能 */
+        .level1-panel {
+            width: 280px;
+            min-width: 280px;
+        }
+
+        /* 中间面板 - 二级功能 */
+        .level2-panel {
+            width: 300px;
+            min-width: 300px;
+        }
+
+        /* 右侧面板 - 种子和生成 */
+        .seed-panel {
+            flex: 1;
+            border-right: none;
+        }
+
+        .seed-panel .panel-content {
+            padding: 0;
+        }
+
+        .seed-table-container {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        .seed-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 900px;
+        }
+
+        .seed-table thead {
+            position: sticky;
+            top: 0;
+            background: #fafafa;
+            z-index: 10;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .seed-table th {
+            padding: 12px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+            white-space: nowrap;
+        }
+
+        .seed-table th:first-child {
+            width: 50px;
+            text-align: center;
+        }
+
+        .seed-table th:nth-child(2) {
+            width: 60px;
+            text-align: center;
+        }
+
+        .seed-table th:nth-child(3) {
+            min-width: 300px;
+        }
+
+        .seed-table th:nth-child(4) {
+            width: 120px;
+            text-align: center;
+        }
+
+        .seed-table th:nth-child(5) {
+            width: 180px;
+            text-align: center;
+        }
+
+        .seed-table th:nth-child(6) {
+            width: 140px;
+            text-align: center;
+        }
+
+        .seed-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+            transition: background-color 0.2s;
+        }
+
+        .seed-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+
+        .seed-table tbody tr.selected {
+            background: #e3f2fd !important;
+        }
+
+        .seed-table td {
+            padding: 12px 10px;
+            vertical-align: middle;
+        }
+
+        .seed-table .seed-number {
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .seed-table .seed-content {
+            color: #333;
+            line-height: 1.6;
+            max-width: 500px;
+            white-space: pre-wrap;
+            word-break: break-word;
+            outline: none;
+            padding: 4px 6px;
+            border-radius: 3px;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        .seed-table .seed-content.editable {
+            cursor: text;
+        }
+
+        .seed-table .seed-content.editable:hover {
+            background: #f0f0f0;
+        }
+
+        .seed-table .seed-content.editable:focus {
+            background: #fff;
+            box-shadow: 0 0 0 2px #2196F3;
+        }
+
+        .seed-table .seed-content.editing {
+            background: #e3f2fd;
+        }
+
+        .seed-table .seed-quantity {
+            text-align: center;
+        }
+
+        .seed-table .seed-quantity input {
+            width: 70px;
+            padding: 4px 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .seed-table .seed-actions {
+            text-align: center;
+        }
+
+        .seed-action-btns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            width: 140px;
+            margin: 0 auto;
+        }
+
+        .seed-action-btn {
+            padding: 5px 8px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .seed-action-btn:hover {
+            background: #f5f5f5;
+            border-color: #2196F3;
+            color: #2196F3;
+        }
+
+        .seed-action-btn.btn-generate {
+            border-color: #4CAF50;
+            color: #4CAF50;
+        }
+
+        .seed-action-btn.btn-generate:hover {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .seed-action-btn.btn-delete {
+            border-color: #f44336;
+            color: #f44336;
+        }
+
+        .seed-action-btn.btn-delete:hover {
+            background: #f44336;
+            color: white;
+        }
+
+        .seed-table .seed-time {
+            text-align: center;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .seed-select-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        {#.select-all-btn {#}
+        {#  background: #2196F3;#}
+        {#  color: white;#}
+        {#  border: none;#}
+        {#  padding: 8px 16px;#}
+        {#  border-radius: 6px;#}
+        {#  font-size: 13px;#}
+        {#  cursor: pointer;#}
+        {#  transition: all 0.2s;#}
+        {#  margin-left: 0px;#}
+
+        .select-all-btn {
+            background: #2196F3;
+            color: white;
+            border: none;
+
+            height: 32px; /* ✅ 和 + 按钮一致 */
+            padding: 0 14px; /* ❗ 只保留左右 padding */
+            line-height: 32px; /* ✅ 文本垂直居中 */
+
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 0;
+        }
+
+
+        .select-all-btn:hover {
+            background: #1976D2;
+        }
+
+        .generate-section {
+            background: white;
+            border-top: 2px solid #4CAF50;
+            padding: 20px;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .generate-params {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-group label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+
+        .param-group input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .generate-btn {
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .generate-btn:hover {
+            background: #45a049;
+        }
+
+        .generate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .batch-delete-btn {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: 12px;
+        }
+
+        .batch-delete-btn:hover {
+            background: #d32f2f;
+        }
+
+        .batch-delete-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        /* Modal样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-footer {
+            padding: 16px 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #45a049;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.success {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .message.error {
+            background: #f44336;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .panel-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px; /* 控制“全选”和“+”间距 */
+        }
+    </style>
 </head>
 <body>
-  <!-- 顶部工具栏 -->
-  <div class="top-toolbar">
+<!-- 顶部工具栏 -->
+<div class="top-toolbar">
     <h2>测试用例工作台</h2>
     <div class="toolbar-actions">
-      <button class="edit-mode-btn" id="editModeBtn" onclick="toggleEditMode()">编辑</button>
-      <button class="save-edit-btn" id="saveEditBtn" onclick="saveEdits()">保存修改</button>
-      <button class="delete-mode-btn" id="deleteModeBtn" onclick="toggleDeleteMode()">删除</button>
-      <button class="confirm-delete-btn" id="confirmDeleteBtn" onclick="confirmDelete()">确认删除</button>
+        <button class="edit-mode-btn" id="editModeBtn" onclick="toggleEditMode()">编辑</button>
+        <button class="save-edit-btn" id="saveEditBtn" onclick="saveEdits()">保存修改</button>
+        <button class="delete-mode-btn" id="deleteModeBtn" onclick="toggleDeleteMode()">删除</button>
+        <button class="confirm-delete-btn" id="confirmDeleteBtn" onclick="confirmDelete()">确认删除</button>
+        <button class="import-btn" id="importBtn" onclick="triggerImport()">导入</button>
+        <input type="file" id="importFileInput" accept=".xlsx" style="display:none" onchange="uploadImportFile(event)">
+
     </div>
-  </div>
-  
-  <div class="workspace-container" id="workspaceContainer">
+</div>
+
+<div class="workspace-container" id="workspaceContainer">
     <!-- 左侧：一级功能列表 -->
     <div class="panel level1-panel">
-      <div class="panel-header">
-        <h3>一级功能</h3>
-        <button class="add-btn" onclick="showAddLevel1Modal()" title="添加一级功能">+</button>
-      </div>
-      <div class="panel-content" id="level1List">
-        {% for level1 in level1_list %}
-        <div class="list-item" data-id="{{ level1.id }}" onclick="selectLevel1({{ level1.id }}, this)">
-          <div class="list-item-content">
-            <div class="list-item-name" data-type="level1" data-id="{{ level1.id }}" data-original="{{ level1.name }}">{{ level1.name }}</div>
-            {% if level1.code %}
-            <div class="list-item-meta">编码: {{ level1.code }}</div>
-            {% endif %}
-          </div>
-          <input type="checkbox" class="list-item-checkbox" data-type="level1" data-id="{{ level1.id }}" onclick="event.stopPropagation()">
+        <div class="panel-header">
+            <h3>一级功能</h3>
+            <button class="add-btn" onclick="showAddLevel1Modal()" title="添加一级功能">+</button>
         </div>
-        {% empty %}
-        <div class="empty-state">
-          <div class="empty-state-icon">📋</div>
-          <p>暂无一级功能<br>点击右上角"+"添加</p>
+        <div class="panel-content" id="level1List">
+            {% for level1 in level1_list %}
+                <div class="list-item" data-id="{{ level1.id }}" onclick="selectLevel1({{ level1.id }}, this)">
+                    <div class="list-item-content">
+                        <div class="list-item-name" data-type="level1" data-id="{{ level1.id }}"
+                             data-original="{{ level1.name }}">{{ level1.name }}</div>
+                        {% if level1.code %}
+                            <div class="list-item-meta">编码: {{ level1.code }}</div>
+                        {% endif %}
+                    </div>
+                    <input type="checkbox" class="list-item-checkbox" data-type="level1" data-id="{{ level1.id }}"
+                           onclick="event.stopPropagation()">
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <div class="empty-state-icon">📋</div>
+                    <p>暂无一级功能<br>点击右上角"+"添加</p>
+                </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-      </div>
     </div>
-    
+
     <!-- 中间：二级功能列表 -->
     <div class="panel level2-panel">
-      <div class="panel-header">
-        <h3>二级功能</h3>
-        <button class="add-btn" id="addLevel2Btn" onclick="showAddLevel2Modal()" title="添加二级功能" disabled>+</button>
-      </div>
-      <div class="panel-content" id="level2List">
-        <div class="empty-state">
-          <div class="empty-state-icon">📝</div>
-          <p>请先选择一级功能</p>
+        <div class="panel-header">
+            <h3>二级功能</h3>
+            <button class="add-btn" id="addLevel2Btn" onclick="showAddLevel2Modal()" title="添加二级功能" disabled>+
+            </button>
         </div>
-      </div>
+        <div class="panel-content" id="level2List">
+            <div class="empty-state">
+                <div class="empty-state-icon">📝</div>
+                <p>请先选择一级功能</p>
+            </div>
+        </div>
     </div>
-    
+
     <!-- 右侧：种子测试用例和生成 -->
     <div class="panel seed-panel">
         <div class="panel-header">
-          <h3>种子测试用例</h3>
-          <div class="panel-header-actions">
-            <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()" disabled>全选</button>
-            <button class="add-btn" id="addSeedBtn" onclick="showAddSeedModal()" title="添加种子用例" disabled>+</button>
-          </div>
+            <h3>种子测试用例</h3>
+            <div class="panel-header-actions">
+                <button class="select-all-btn" id="selectAllBtn" onclick="toggleSelectAll()" disabled>全选</button>
+                <button class="add-btn" id="addSeedBtn" onclick="showAddSeedModal()" title="添加种子用例" disabled>+
+                </button>
+            </div>
         </div>
 
-      
-      <!-- 种子列表 -->
-      <div class="panel-content" id="seedList">
-        <div class="empty-state">
-          <div class="empty-state-icon">🌱</div>
-          <p>请先选择二级功能</p>
+
+        <!-- 种子列表 -->
+        <div class="panel-content" id="seedList">
+            <div class="empty-state">
+                <div class="empty-state-icon">🌱</div>
+                <p>请先选择二级功能</p>
+            </div>
         </div>
-      </div>
-      
-      <!-- 生成按钮区 -->
-      <div class="generate-section" id="generateSection" style="display: none;">
-        <div class="generate-params">
-          <div class="param-group">
-            <label>Temperature</label>
-            <input type="number" id="temperature" value="0.7" step="0.1" min="0" max="2">
-          </div>
-          <div class="param-group">
-            <label>Top P</label>
-            <input type="number" id="topP" value="1.0" step="0.1" min="0" max="1">
-          </div>
+
+        <!-- 生成按钮区 -->
+        <div class="generate-section" id="generateSection" style="display: none;">
+            <div class="generate-params">
+                <div class="param-group">
+                    <label>Temperature</label>
+                    <input type="number" id="temperature" value="0.7" step="0.1" min="0" max="2">
+                </div>
+                <div class="param-group">
+                    <label>Top P</label>
+                    <input type="number" id="topP" value="1.0" step="0.1" min="0" max="1">
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <button class="generate-btn" onclick="generateTestcases()" style="flex: 1;">生成泛化用例</button>
+                <button class="batch-delete-btn" onclick="batchDeleteSeeds()" id="batchDeleteBtn" disabled>批量删除
+                </button>
+            </div>
         </div>
-        <div style="display: flex; gap: 12px;">
-          <button class="generate-btn" onclick="generateTestcases()" style="flex: 1;">生成泛化用例</button>
-          <button class="batch-delete-btn" onclick="batchDeleteSeeds()" id="batchDeleteBtn" disabled>批量删除</button>
-        </div>
-      </div>
     </div>
-  </div>
-  
-  <!-- 添加一级功能模态框 -->
-  <div class="modal" id="addLevel1Modal">
+</div>
+
+<!-- 添加一级功能模态框 -->
+<div class="modal" id="addLevel1Modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>添加一级功能</h3>
-        <button class="modal-close" onclick="closeModal('addLevel1Modal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>名称 <span style="color: red;">*</span></label>
-          <input type="text" id="level1Name" placeholder="输入一级功能名称">
+        <div class="modal-header">
+            <h3>添加一级功能</h3>
+            <button class="modal-close" onclick="closeModal('addLevel1Modal')">&times;</button>
         </div>
-        <div class="form-group">
-          <label>编码</label>
-          <input type="text" id="level1Code" placeholder="可选：编码/业务Key">
+        <div class="modal-body">
+            <div class="form-group">
+                <label>名称 <span style="color: red;">*</span></label>
+                <input type="text" id="level1Name" placeholder="输入一级功能名称">
+            </div>
+            <div class="form-group">
+                <label>编码</label>
+                <input type="text" id="level1Code" placeholder="可选：编码/业务Key">
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('addLevel1Modal')">取消</button>
-        <button class="btn btn-primary" onclick="submitAddLevel1()">确定</button>
-      </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('addLevel1Modal')">取消</button>
+            <button class="btn btn-primary" onclick="submitAddLevel1()">确定</button>
+        </div>
     </div>
-  </div>
-  
-  <!-- 添加二级功能模态框 -->
-  <div class="modal" id="addLevel2Modal">
+</div>
+
+<!-- 添加二级功能模态框 -->
+<div class="modal" id="addLevel2Modal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>添加二级功能</h3>
-        <button class="modal-close" onclick="closeModal('addLevel2Modal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>名称 <span style="color: red;">*</span></label>
-          <input type="text" id="level2Name" placeholder="输入二级功能名称">
+        <div class="modal-header">
+            <h3>添加二级功能</h3>
+            <button class="modal-close" onclick="closeModal('addLevel2Modal')">&times;</button>
         </div>
-        <div class="form-group">
-          <label>编码</label>
-          <input type="text" id="level2Code" placeholder="可选：编码">
+        <div class="modal-body">
+            <div class="form-group">
+                <label>名称 <span style="color: red;">*</span></label>
+                <input type="text" id="level2Name" placeholder="输入二级功能名称">
+            </div>
+            <div class="form-group">
+                <label>编码</label>
+                <input type="text" id="level2Code" placeholder="可选：编码">
+            </div>
+            <div class="form-group">
+                <label>场景提示词</label>
+                <textarea id="level2Prompt" placeholder="输入该二级功能（场景）的提示词"></textarea>
+            </div>
         </div>
-        <div class="form-group">
-          <label>场景提示词</label>
-          <textarea id="level2Prompt" placeholder="输入该二级功能（场景）的提示词"></textarea>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('addLevel2Modal')">取消</button>
+            <button class="btn btn-primary" onclick="submitAddLevel2()">确定</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('addLevel2Modal')">取消</button>
-        <button class="btn btn-primary" onclick="submitAddLevel2()">确定</button>
-      </div>
     </div>
-  </div>
-  
-  <!-- 添加种子用例模态框 -->
-  <div class="modal" id="addSeedModal">
+</div>
+
+<!-- 添加种子用例模态框 -->
+<div class="modal" id="addSeedModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>添加种子测试用例</h3>
-        <button class="modal-close" onclick="closeModal('addSeedModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>测试用例内容 <span style="color: red;">*</span></label>
-          <textarea id="seedText" placeholder="输入测试用例内容..." rows="6"></textarea>
+        <div class="modal-header">
+            <h3>添加种子测试用例</h3>
+            <button class="modal-close" onclick="closeModal('addSeedModal')">&times;</button>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('addSeedModal')">取消</button>
-        <button class="btn btn-primary" onclick="submitAddSeed()">确定</button>
-      </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>测试用例内容 <span style="color: red;">*</span></label>
+                <textarea id="seedText" placeholder="输入测试用例内容..." rows="6"></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('addSeedModal')">取消</button>
+            <button class="btn btn-primary" onclick="submitAddSeed()">确定</button>
+        </div>
     </div>
-  </div>
-  
-  <!-- 查看/编辑提示词模态框 -->
-  <div class="modal" id="promptModal">
+</div>
+
+<!-- 查看/编辑提示词模态框 -->
+<div class="modal" id="promptModal">
     <div class="modal-content">
-      <div class="modal-header">
-        <h3>场景提示词</h3>
-        <button class="modal-close" onclick="closeModal('promptModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>二级功能名称</label>
-          <input type="text" id="promptLevel2Name" readonly style="background: #f5f5f5;">
+        <div class="modal-header">
+            <h3>场景提示词</h3>
+            <button class="modal-close" onclick="closeModal('promptModal')">&times;</button>
         </div>
-        <div class="form-group">
-          <label>提示词内容</label>
-          <textarea id="promptContent" rows="8" readonly style="background: #f5f5f5;"></textarea>
+        <div class="modal-body">
+            <div class="form-group">
+                <label>二级功能名称</label>
+                <input type="text" id="promptLevel2Name" readonly style="background: #f5f5f5;">
+            </div>
+            <div class="form-group">
+                <label>提示词内容</label>
+                <textarea id="promptContent" rows="8" readonly style="background: #f5f5f5;"></textarea>
+            </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('promptModal')">返回</button>
-        <button class="btn btn-primary" id="editPromptBtn" onclick="togglePromptEdit()">编辑</button>
-      </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal('promptModal')">返回</button>
+            <button class="btn btn-primary" id="editPromptBtn" onclick="togglePromptEdit()">编辑</button>
+        </div>
     </div>
-  </div>
-  
-  <!-- 消息提示 -->
-  <div class="message" id="message"></div>
-  
-  <script>
+</div>
+
+<!-- 消息提示 -->
+<div class="message" id="message"></div>
+
+<script>
     // 全局状态
     let currentLevel1Id = null;
     let currentLevel2Id = null;
     let deleteMode = false;
     let editMode = false;
     let editedItems = new Map(); // 存储修改的内容
-    
+
     // 切换编辑模式
     function toggleEditMode() {
-      editMode = !editMode;
-      const editModeBtn = document.getElementById('editModeBtn');
-      const saveBtn = document.getElementById('saveEditBtn');
-      
-      if (editMode) {
-        // 进入编辑模式
-        editModeBtn.classList.add('cancel-mode');
-        editModeBtn.textContent = '取消编辑';
-        saveBtn.classList.add('show');
-        
-        // 启用所有可编辑元素
-        enableEditing();
-      } else {
-        // 退出编辑模式
-        editModeBtn.classList.remove('cancel-mode');
-        editModeBtn.textContent = '编辑';
-        saveBtn.classList.remove('show');
-        
-        // 禁用编辑并恢复原始内容
-        disableEditing();
-        editedItems.clear();
-      }
+        editMode = !editMode;
+        const editModeBtn = document.getElementById('editModeBtn');
+        const saveBtn = document.getElementById('saveEditBtn');
+
+        if (editMode) {
+            // 进入编辑模式
+            editModeBtn.classList.add('cancel-mode');
+            editModeBtn.textContent = '取消编辑';
+            saveBtn.classList.add('show');
+
+            // 启用所有可编辑元素
+            enableEditing();
+        } else {
+            // 退出编辑模式
+            editModeBtn.classList.remove('cancel-mode');
+            editModeBtn.textContent = '编辑';
+            saveBtn.classList.remove('show');
+
+            // 禁用编辑并恢复原始内容
+            disableEditing();
+            editedItems.clear();
+        }
     }
-    
+
     // 启用编辑
     function enableEditing() {
-      // 一级功能名称
-      document.querySelectorAll('.list-item-name[data-type="level1"]').forEach(el => {
-        el.contentEditable = true;
-        el.classList.add('editable');
-        el.addEventListener('input', onLevel1NameChange);
-      });
-      
-      // 二级功能名称
-      document.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
-        el.contentEditable = true;
-        el.classList.add('editable');
-        el.addEventListener('input', onLevel2NameChange);
-      });
-      
-      // 种子测试用例不再通过顶部编辑按钮控制，使用操作栏中的编辑按钮
+        // 一级功能名称
+        document.querySelectorAll('.list-item-name[data-type="level1"]').forEach(el => {
+            el.contentEditable = true;
+            el.classList.add('editable');
+            el.addEventListener('input', onLevel1NameChange);
+        });
+
+        // 二级功能名称
+        document.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
+            el.contentEditable = true;
+            el.classList.add('editable');
+            el.addEventListener('input', onLevel2NameChange);
+        });
+
+        // 种子测试用例不再通过顶部编辑按钮控制，使用操作栏中的编辑按钮
     }
-    
+
     // 禁用编辑
     function disableEditing() {
-      // 一级功能名称
-      document.querySelectorAll('.list-item-name[data-type="level1"]').forEach(el => {
-        el.contentEditable = false;
-        el.classList.remove('editable', 'editing');
-        el.textContent = el.dataset.original;
-        el.removeEventListener('input', onLevel1NameChange);
-      });
-      
-      // 二级功能名称
-      document.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
-        el.contentEditable = false;
-        el.classList.remove('editable', 'editing');
-        el.textContent = el.dataset.original;
-        el.removeEventListener('input', onLevel2NameChange);
-      });
-      
-      // 种子测试用例不再通过顶部编辑按钮控制
+        // 一级功能名称
+        document.querySelectorAll('.list-item-name[data-type="level1"]').forEach(el => {
+            el.contentEditable = false;
+            el.classList.remove('editable', 'editing');
+            el.textContent = el.dataset.original;
+            el.removeEventListener('input', onLevel1NameChange);
+        });
+
+        // 二级功能名称
+        document.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
+            el.contentEditable = false;
+            el.classList.remove('editable', 'editing');
+            el.textContent = el.dataset.original;
+            el.removeEventListener('input', onLevel2NameChange);
+        });
+
+        // 种子测试用例不再通过顶部编辑按钮控制
     }
-    
+
     // 监听一级功能名称变化
     function onLevel1NameChange(e) {
-      const el = e.target;
-      const id = el.dataset.id;
-      const newName = el.textContent.trim();
-      el.classList.add('editing');
-      editedItems.set(`level1_${id}`, { type: 'level1', id, name: newName });
+        const el = e.target;
+        const id = el.dataset.id;
+        const newName = el.textContent.trim();
+        el.classList.add('editing');
+        editedItems.set(`level1_${id}`, {type: 'level1', id, name: newName});
     }
-    
+
     // 监听二级功能名称变化
     function onLevel2NameChange(e) {
-      const el = e.target;
-      const id = el.dataset.id;
-      const newName = el.textContent.trim();
-      el.classList.add('editing');
-      
-      // 获取当前存储的项（可能已经包含prompt）
-      const existingItem = editedItems.get(`level2_${id}`);
-      
-      editedItems.set(`level2_${id}`, { 
-        type: 'level2', 
-        id, 
-        name: newName,
-        prompt: existingItem?.prompt // 保留已有的prompt修改
-      });
+        const el = e.target;
+        const id = el.dataset.id;
+        const newName = el.textContent.trim();
+        el.classList.add('editing');
+
+        // 获取当前存储的项（可能已经包含prompt）
+        const existingItem = editedItems.get(`level2_${id}`);
+
+        editedItems.set(`level2_${id}`, {
+            type: 'level2',
+            id,
+            name: newName,
+            prompt: existingItem?.prompt // 保留已有的prompt修改
+        });
     }
-    
+
     // 种子内容不再通过顶部编辑模式控制，使用操作栏中的编辑按钮
-    
+
     // 保存所有修改（不再包含种子）
     async function saveEdits() {
-      if (editedItems.size === 0) {
-        showMessage('没有需要保存的修改', 'info');
-        return;
-      }
-      
-      const updates = Array.from(editedItems.values());
-      let successCount = 0;
-      let errorCount = 0;
-      
-      for (const item of updates) {
-        try {
-          if (item.type === 'level1') {
-            await updateLevel1(item.id, item.name);
-          } else if (item.type === 'level2') {
-            await updateLevel2(item.id, item.name, item.prompt);
-          }
-          // 种子不再通过这里保存
-          successCount++;
-        } catch (err) {
-          errorCount++;
-          console.error('保存失败:', err);
+        if (editedItems.size === 0) {
+            showMessage('没有需要保存的修改', 'info');
+            return;
         }
-      }
-      
-      if (errorCount === 0) {
-        showMessage(`成功保存 ${successCount} 项修改`, 'success');
-        setTimeout(() => location.reload(), 1000);
-      } else {
-        showMessage(`保存完成：成功 ${successCount} 项，失败 ${errorCount} 项`, 'warning');
-        setTimeout(() => location.reload(), 2000);
-      }
+
+        const updates = Array.from(editedItems.values());
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const item of updates) {
+            try {
+                if (item.type === 'level1') {
+                    await updateLevel1(item.id, item.name);
+                } else if (item.type === 'level2') {
+                    await updateLevel2(item.id, item.name, item.prompt);
+                }
+                // 种子不再通过这里保存
+                successCount++;
+            } catch (err) {
+                errorCount++;
+                console.error('保存失败:', err);
+            }
+        }
+
+        if (errorCount === 0) {
+            showMessage(`成功保存 ${successCount} 项修改`, 'success');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showMessage(`保存完成：成功 ${successCount} 项，失败 ${errorCount} 项`, 'warning');
+            setTimeout(() => location.reload(), 2000);
+        }
     }
-    
+
     // 更新一级功能
     function updateLevel1(id, name) {
-      return fetch('/Generate_testcases/api/update-level1/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ id, name })
-      }).then(res => res.json()).then(data => {
-        if (data.error) throw new Error(data.error);
-      });
+        return fetch('/Generate_testcases/api/update-level1/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({id, name})
+        }).then(res => res.json()).then(data => {
+            if (data.error) throw new Error(data.error);
+        });
     }
-    
+
     // 更新二级功能
     function updateLevel2(id, name, prompt) {
-      return fetch('/Generate_testcases/api/update-level2/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({ id, name, prompt })
-      }).then(res => res.json()).then(data => {
-        if (data.error) throw new Error(data.error);
-      });
+        return fetch('/Generate_testcases/api/update-level2/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({id, name, prompt})
+        }).then(res => res.json()).then(data => {
+            if (data.error) throw new Error(data.error);
+        });
     }
-    
+
     // updateSeed函数已移除，种子编辑通过操作栏的编辑按钮完成
-    
+
     // 切换删除模式
     function toggleDeleteMode() {
-      deleteMode = !deleteMode;
-      const container = document.getElementById('workspaceContainer');
-      const deleteModeBtn = document.getElementById('deleteModeBtn');
-      const confirmBtn = document.getElementById('confirmDeleteBtn');
-      
-      if (deleteMode) {
-        container.classList.add('delete-mode');
-        deleteModeBtn.classList.add('cancel-mode');
-        deleteModeBtn.textContent = '取消';
-        confirmBtn.classList.add('show');
-      } else {
-        container.classList.remove('delete-mode');
-        deleteModeBtn.classList.remove('cancel-mode');
-        deleteModeBtn.textContent = '删除';
-        confirmBtn.classList.remove('show');
-        // 取消所有选中
-        document.querySelectorAll('.list-item-checkbox, .seed-delete-checkbox').forEach(cb => cb.checked = false);
-      }
+        deleteMode = !deleteMode;
+        const container = document.getElementById('workspaceContainer');
+        const deleteModeBtn = document.getElementById('deleteModeBtn');
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
+
+        if (deleteMode) {
+            container.classList.add('delete-mode');
+            deleteModeBtn.classList.add('cancel-mode');
+            deleteModeBtn.textContent = '取消';
+            confirmBtn.classList.add('show');
+        } else {
+            container.classList.remove('delete-mode');
+            deleteModeBtn.classList.remove('cancel-mode');
+            deleteModeBtn.textContent = '删除';
+            confirmBtn.classList.remove('show');
+            // 取消所有选中
+            document.querySelectorAll('.list-item-checkbox, .seed-delete-checkbox').forEach(cb => cb.checked = false);
+        }
     }
-    
+
     // 确认删除
     function confirmDelete() {
-      const level1Ids = [];
-      const level2Ids = [];
-      
-      // 收集选中的项（不再收集种子）
-      document.querySelectorAll('.list-item-checkbox:checked').forEach(cb => {
-        const type = cb.dataset.type;
-        const id = parseInt(cb.dataset.id);
-        if (type === 'level1') level1Ids.push(id);
-        if (type === 'level2') level2Ids.push(id);
-      });
-      
-      if (level1Ids.length === 0 && level2Ids.length === 0) {
-        showMessage('请至少选择一项要删除的内容', 'error');
-        return;
-      }
-      
-      if (!confirm(`确定要删除选中的 ${level1Ids.length + level2Ids.length} 项吗？\n删除一级功能会同时删除其下的所有二级功能和种子。\n删除二级功能会同时删除其下的所有种子。`)) {
-        return;
-      }
-      
-      fetch('/Generate_testcases/api/delete-items/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}'
-        },
-        body: JSON.stringify({
-          level1_ids: level1Ids,
-          level2_ids: level2Ids,
-          seed_ids: []
-        })
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(data.message, 'success');
-          // 刷新页面
-          setTimeout(() => location.reload(), 1000);
+        const level1Ids = [];
+        const level2Ids = [];
+
+        // 收集选中的项（不再收集种子）
+        document.querySelectorAll('.list-item-checkbox:checked').forEach(cb => {
+            const type = cb.dataset.type;
+            const id = parseInt(cb.dataset.id);
+            if (type === 'level1') level1Ids.push(id);
+            if (type === 'level2') level2Ids.push(id);
+        });
+
+        if (level1Ids.length === 0 && level2Ids.length === 0) {
+            showMessage('请至少选择一项要删除的内容', 'error');
+            return;
         }
-      })
-      .catch(err => showMessage('删除失败', 'error'));
+
+        if (!confirm(`确定要删除选中的 ${level1Ids.length + level2Ids.length} 项吗？\n删除一级功能会同时删除其下的所有二级功能和种子。\n删除二级功能会同时删除其下的所有种子。`)) {
+            return;
+        }
+
+        fetch('/Generate_testcases/api/delete-items/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                level1_ids: level1Ids,
+                level2_ids: level2Ids,
+                seed_ids: []
+            })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                } else {
+                    showMessage(data.message, 'success');
+                    // 刷新页面
+                    setTimeout(() => location.reload(), 1000);
+                }
+            })
+            .catch(err => showMessage('删除失败', 'error'));
     }
-    
+
     // 选择一级功能
     function selectLevel1(id, element) {
-      currentLevel1Id = id;
-      currentLevel2Id = null;
-      
-      // 更新UI
-      document.querySelectorAll('.level1-panel .list-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
-      
-      // 启用添加二级功能按钮
-      document.getElementById('addLevel2Btn').disabled = false;
-      
-      // 加载二级功能列表
-      loadLevel2List(id);
-      
-      // 清空种子列表
-      clearSeedPanel();
+        currentLevel1Id = id;
+        currentLevel2Id = null;
+
+        // 更新UI
+        document.querySelectorAll('.level1-panel .list-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        // 启用添加二级功能按钮
+        document.getElementById('addLevel2Btn').disabled = false;
+
+        // 加载二级功能列表
+        loadLevel2List(id);
+
+        // 清空种子列表
+        clearSeedPanel();
     }
-    
+
     // 加载二级功能列表
     function loadLevel2List(level1Id) {
-      fetch(`/Generate_testcases/api/get-level2-list/?level1_id=${level1Id}`)
-        .then(res => res.json())
-        .then(data => {
-          const container = document.getElementById('level2List');
-          if (data.level2_list && data.level2_list.length > 0) {
-            container.innerHTML = data.level2_list.map(l2 => `
+        fetch(`/Generate_testcases/api/get-level2-list/?level1_id=${level1Id}`)
+            .then(res => res.json())
+            .then(data => {
+                const container = document.getElementById('level2List');
+                if (data.level2_list && data.level2_list.length > 0) {
+                    container.innerHTML = data.level2_list.map(l2 => `
               <div class="list-item" data-id="${l2.id}" onclick="selectLevel2(${l2.id}, this)">
                 <div class="list-item-content">
                   <div class="list-item-name" data-type="level2" data-id="${l2.id}" data-original="${l2.name}">${l2.name}</div>
@@ -1231,51 +1240,51 @@
                 <input type="checkbox" class="list-item-checkbox" data-type="level2" data-id="${l2.id}" onclick="event.stopPropagation()">
               </div>
             `).join('');
-            
-            // 如果在编辑模式，启用新加载的元素
-            if (editMode) {
-              container.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
-                el.contentEditable = true;
-                el.classList.add('editable');
-                el.addEventListener('input', onLevel2NameChange);
-              });
-            }
-          } else {
-            container.innerHTML = `
+
+                    // 如果在编辑模式，启用新加载的元素
+                    if (editMode) {
+                        container.querySelectorAll('.list-item-name[data-type="level2"]').forEach(el => {
+                            el.contentEditable = true;
+                            el.classList.add('editable');
+                            el.addEventListener('input', onLevel2NameChange);
+                        });
+                    }
+                } else {
+                    container.innerHTML = `
               <div class="empty-state">
                 <div class="empty-state-icon">📝</div>
                 <p>暂无二级功能<br>点击右上角"+"添加</p>
               </div>
             `;
-          }
-        })
-        .catch(err => showMessage('加载二级功能列表失败', 'error'));
+                }
+            })
+            .catch(err => showMessage('加载二级功能列表失败', 'error'));
     }
-    
+
     // 选择二级功能
     function selectLevel2(id, element) {
-      currentLevel2Id = id;
-      
-      // 更新UI
-      document.querySelectorAll('.level2-panel .list-item').forEach(el => el.classList.remove('active'));
-      element.classList.add('active');
-      
-      // 启用添加种子按钮
-      document.getElementById('addSeedBtn').disabled = false;
-      
-      // 加载种子列表
-      loadSeedList(id);
+        currentLevel2Id = id;
+
+        // 更新UI
+        document.querySelectorAll('.level2-panel .list-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+
+        // 启用添加种子按钮
+        document.getElementById('addSeedBtn').disabled = false;
+
+        // 加载种子列表
+        loadSeedList(id);
     }
-    
+
     // 加载种子列表
     function loadSeedList(level2Id) {
-      fetch(`/Generate_testcases/api/get-seed-list/?level2_id=${level2Id}`)
-        .then(res => res.json())
-        .then(data => {
-          // 显示种子列表
-          const container = document.getElementById('seedList');
-          if (data.seed_list && data.seed_list.length > 0) {
-            container.innerHTML = `
+        fetch(`/Generate_testcases/api/get-seed-list/?level2_id=${level2Id}`)
+            .then(res => res.json())
+            .then(data => {
+                // 显示种子列表
+                const container = document.getElementById('seedList');
+                if (data.seed_list && data.seed_list.length > 0) {
+                    container.innerHTML = `
               <div class="seed-table-container">
                 <table class="seed-table">
                   <thead>
@@ -1316,577 +1325,623 @@
                 </table>
               </div>
             `;
-            
-            // 如果在编辑模式，启用种子内容编辑
-            if (editMode) {
-              document.querySelectorAll('.seed-content[data-seed-id]').forEach(el => {
-                el.contentEditable = true;
-                el.classList.add('editable');
-                el.addEventListener('input', onSeedContentChange);
-              });
-            }
-            
-            // 显示生成区域
-            document.getElementById('generateSection').style.display = 'block';
-            
-            // 启用全选按钮，批量删除按钮初始禁用
-            document.getElementById('selectAllBtn').disabled = false;
-            document.getElementById('batchDeleteBtn').disabled = true;
-          } else {
-            container.innerHTML = `
+
+                    // 如果在编辑模式，启用种子内容编辑
+                    if (editMode) {
+                        document.querySelectorAll('.seed-content[data-seed-id]').forEach(el => {
+                            el.contentEditable = true;
+                            el.classList.add('editable');
+                            el.addEventListener('input', onSeedContentChange);
+                        });
+                    }
+
+                    // 显示生成区域
+                    document.getElementById('generateSection').style.display = 'block';
+
+                    // 启用全选按钮，批量删除按钮初始禁用
+                    document.getElementById('selectAllBtn').disabled = false;
+                    document.getElementById('batchDeleteBtn').disabled = true;
+                } else {
+                    container.innerHTML = `
               <div class="empty-state">
                 <div class="empty-state-icon">🌱</div>
                 <p>暂无种子测试用例<br>点击右上角"+"添加</p>
               </div>
             `;
-            document.getElementById('generateSection').style.display = 'none';
-            document.getElementById('selectAllBtn').disabled = true;
-            document.getElementById('batchDeleteBtn').disabled = true;
-          }
-        })
-        .catch(err => showMessage('加载种子列表失败', 'error'));
+                    document.getElementById('generateSection').style.display = 'none';
+                    document.getElementById('selectAllBtn').disabled = true;
+                    document.getElementById('batchDeleteBtn').disabled = true;
+                }
+            })
+            .catch(err => showMessage('加载种子列表失败', 'error'));
     }
-    
+
     // 清空种子面板
     function clearSeedPanel() {
-      document.getElementById('seedList').innerHTML = `
+        document.getElementById('seedList').innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">🌱</div>
           <p>请先选择二级功能</p>
         </div>
       `;
-      document.getElementById('generateSection').style.display = 'none';
-      document.getElementById('addSeedBtn').disabled = true;
-      document.getElementById('selectAllBtn').disabled = true;
-      document.getElementById('batchDeleteBtn').disabled = true;
+        document.getElementById('generateSection').style.display = 'none';
+        document.getElementById('addSeedBtn').disabled = true;
+        document.getElementById('selectAllBtn').disabled = true;
+        document.getElementById('batchDeleteBtn').disabled = true;
     }
-    
+
     // 更新生成按钮状态（已移除，种子选择通过输入数量来确定）
     function updateGenerateBtn() {
-      // 不再需要此函数，但保留以避免调用错误
+        // 不再需要此函数，但保留以避免调用错误
     }
-    
+
     // Modal操作
     function showAddLevel1Modal() {
-      document.getElementById('level1Name').value = '';
-      document.getElementById('level1Code').value = '';
-      document.getElementById('addLevel1Modal').classList.add('show');
+        document.getElementById('level1Name').value = '';
+        document.getElementById('level1Code').value = '';
+        document.getElementById('addLevel1Modal').classList.add('show');
     }
-    
+
     function showAddLevel2Modal() {
-      if (!currentLevel1Id) {
-        showMessage('请先选择一级功能', 'error');
-        return;
-      }
-      document.getElementById('level2Name').value = '';
-      document.getElementById('level2Code').value = '';
-      document.getElementById('level2Prompt').value = '';
-      document.getElementById('addLevel2Modal').classList.add('show');
+        if (!currentLevel1Id) {
+            showMessage('请先选择一级功能', 'error');
+            return;
+        }
+        document.getElementById('level2Name').value = '';
+        document.getElementById('level2Code').value = '';
+        document.getElementById('level2Prompt').value = '';
+        document.getElementById('addLevel2Modal').classList.add('show');
     }
-    
+
     function showAddSeedModal() {
-      if (!currentLevel2Id) {
-        showMessage('请先选择二级功能', 'error');
-        return;
-      }
-      document.getElementById('seedText').value = '';
-      document.getElementById('addSeedModal').classList.add('show');
+        if (!currentLevel2Id) {
+            showMessage('请先选择二级功能', 'error');
+            return;
+        }
+        document.getElementById('seedText').value = '';
+        document.getElementById('addSeedModal').classList.add('show');
     }
-    
+
     function closeModal(modalId) {
-      document.getElementById(modalId).classList.remove('show');
+        document.getElementById(modalId).classList.remove('show');
     }
-    
+
     // 提交添加一级功能
     function submitAddLevel1() {
-      const name = document.getElementById('level1Name').value.trim();
-      const code = document.getElementById('level1Code').value.trim();
-      
-      if (!name) {
-        showMessage('请输入名称', 'error');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('name', name);
-      formData.append('code', code);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      
-      fetch('/Generate_testcases/api/add-level1/', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(data.message, 'success');
-          closeModal('addLevel1Modal');
-          // 刷新列表
-          location.reload();
+        const name = document.getElementById('level1Name').value.trim();
+        const code = document.getElementById('level1Code').value.trim();
+
+        if (!name) {
+            showMessage('请输入名称', 'error');
+            return;
         }
-      })
-      .catch(err => showMessage('添加失败', 'error'));
+
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('code', code);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/Generate_testcases/api/add-level1/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                } else {
+                    showMessage(data.message, 'success');
+                    closeModal('addLevel1Modal');
+                    // 刷新列表
+                    location.reload();
+                }
+            })
+            .catch(err => showMessage('添加失败', 'error'));
     }
-    
+
     // 提交添加二级功能
     function submitAddLevel2() {
-      const name = document.getElementById('level2Name').value.trim();
-      const code = document.getElementById('level2Code').value.trim();
-      const prompt = document.getElementById('level2Prompt').value.trim();
-      
-      if (!name) {
-        showMessage('请输入名称', 'error');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('level1_id', currentLevel1Id);
-      formData.append('name', name);
-      formData.append('code', code);
-      formData.append('prompt', prompt);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      
-      fetch('/Generate_testcases/api/add-level2/', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(data.message, 'success');
-          closeModal('addLevel2Modal');
-          // 刷新二级功能列表
-          loadLevel2List(currentLevel1Id);
+        const name = document.getElementById('level2Name').value.trim();
+        const code = document.getElementById('level2Code').value.trim();
+        const prompt = document.getElementById('level2Prompt').value.trim();
+
+        if (!name) {
+            showMessage('请输入名称', 'error');
+            return;
         }
-      })
-      .catch(err => showMessage('添加失败', 'error'));
+
+        const formData = new FormData();
+        formData.append('level1_id', currentLevel1Id);
+        formData.append('name', name);
+        formData.append('code', code);
+        formData.append('prompt', prompt);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/Generate_testcases/api/add-level2/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                } else {
+                    showMessage(data.message, 'success');
+                    closeModal('addLevel2Modal');
+                    // 刷新二级功能列表
+                    loadLevel2List(currentLevel1Id);
+                }
+            })
+            .catch(err => showMessage('添加失败', 'error'));
     }
-    
+
     // 提交添加种子用例
     function submitAddSeed() {
-      const text = document.getElementById('seedText').value.trim();
-      
-      if (!text) {
-        showMessage('请输入测试用例内容', 'error');
-        return;
-      }
-      
-      const formData = new FormData();
-      formData.append('level2_id', currentLevel2Id);
-      formData.append('text', text);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      
-      fetch('/Generate_testcases/api/add-seed/', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(data.message, 'success');
-          closeModal('addSeedModal');
-          // 刷新种子列表
-          loadSeedList(currentLevel2Id);
+        const text = document.getElementById('seedText').value.trim();
+
+        if (!text) {
+            showMessage('请输入测试用例内容', 'error');
+            return;
         }
-      })
-      .catch(err => showMessage('添加失败', 'error'));
+
+        const formData = new FormData();
+        formData.append('level2_id', currentLevel2Id);
+        formData.append('text', text);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/Generate_testcases/api/add-seed/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                } else {
+                    showMessage(data.message, 'success');
+                    closeModal('addSeedModal');
+                    // 刷新种子列表
+                    loadSeedList(currentLevel2Id);
+                }
+            })
+            .catch(err => showMessage('添加失败', 'error'));
     }
-    
+
     // 查看提示词
     function viewPrompt(level2Id, level2Name, prompt, event) {
-      event.stopPropagation(); // 阻止触发selectLevel2
-      
-      // 设置模态框内容
-      document.getElementById('promptLevel2Name').value = level2Name;
-      document.getElementById('promptContent').value = prompt || '';
-      
-      // 存储当前编辑的level2Id
-      document.getElementById('promptModal').dataset.level2Id = level2Id;
-      
-      // 重置为只读模式
-      const promptContent = document.getElementById('promptContent');
-      const editBtn = document.getElementById('editPromptBtn');
-      promptContent.readOnly = true;
-      promptContent.style.background = '#f5f5f5';
-      editBtn.textContent = '编辑';
-      editBtn.onclick = togglePromptEdit;
-      
-      // 显示模态框
-      document.getElementById('promptModal').classList.add('show');
+        event.stopPropagation(); // 阻止触发selectLevel2
+
+        // 设置模态框内容
+        document.getElementById('promptLevel2Name').value = level2Name;
+        document.getElementById('promptContent').value = prompt || '';
+
+        // 存储当前编辑的level2Id
+        document.getElementById('promptModal').dataset.level2Id = level2Id;
+
+        // 重置为只读模式
+        const promptContent = document.getElementById('promptContent');
+        const editBtn = document.getElementById('editPromptBtn');
+        promptContent.readOnly = true;
+        promptContent.style.background = '#f5f5f5';
+        editBtn.textContent = '编辑';
+        editBtn.onclick = togglePromptEdit;
+
+        // 显示模态框
+        document.getElementById('promptModal').classList.add('show');
     }
-    
+
     // 切换提示词编辑模式
     function togglePromptEdit() {
-      const promptContent = document.getElementById('promptContent');
-      const editBtn = document.getElementById('editPromptBtn');
-      
-      if (promptContent.readOnly) {
-        // 进入编辑模式
-        promptContent.readOnly = false;
-        promptContent.style.background = '#fff';
-        promptContent.focus();
-        editBtn.textContent = '保存';
-        editBtn.onclick = savePromptEdit;
-      }
+        const promptContent = document.getElementById('promptContent');
+        const editBtn = document.getElementById('editPromptBtn');
+
+        if (promptContent.readOnly) {
+            // 进入编辑模式
+            promptContent.readOnly = false;
+            promptContent.style.background = '#fff';
+            promptContent.focus();
+            editBtn.textContent = '保存';
+            editBtn.onclick = savePromptEdit;
+        }
     }
-    
+
     // 保存提示词编辑
     async function savePromptEdit() {
-      const modal = document.getElementById('promptModal');
-      const level2Id = modal.dataset.level2Id;
-      const promptContent = document.getElementById('promptContent').value.trim();
-      const level2Name = document.getElementById('promptLevel2Name').value;
-      
-      try {
-        const response = await fetch('/Generate_testcases/api/update-level2/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-          },
-          body: JSON.stringify({
-            id: level2Id,
-            name: level2Name,
-            prompt: promptContent
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage('提示词保存成功', 'success');
-          
-          // 切换回只读模式
-          const promptContentEl = document.getElementById('promptContent');
-          const editBtn = document.getElementById('editPromptBtn');
-          promptContentEl.readOnly = true;
-          promptContentEl.style.background = '#f5f5f5';
-          editBtn.textContent = '编辑';
-          editBtn.onclick = togglePromptEdit;
-          
-          // 更新二级功能列表中的提示词状态
-          if (currentLevel1Id) {
-            loadLevel2List(currentLevel1Id);
-          }
+        const modal = document.getElementById('promptModal');
+        const level2Id = modal.dataset.level2Id;
+        const promptContent = document.getElementById('promptContent').value.trim();
+        const level2Name = document.getElementById('promptLevel2Name').value;
+
+        try {
+            const response = await fetch('/Generate_testcases/api/update-level2/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    id: level2Id,
+                    name: level2Name,
+                    prompt: promptContent
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('提示词保存成功', 'success');
+
+                // 切换回只读模式
+                const promptContentEl = document.getElementById('promptContent');
+                const editBtn = document.getElementById('editPromptBtn');
+                promptContentEl.readOnly = true;
+                promptContentEl.style.background = '#f5f5f5';
+                editBtn.textContent = '编辑';
+                editBtn.onclick = togglePromptEdit;
+
+                // 更新二级功能列表中的提示词状态
+                if (currentLevel1Id) {
+                    loadLevel2List(currentLevel1Id);
+                }
+            }
+        } catch (err) {
+            showMessage('保存失败', 'error');
         }
-      } catch (err) {
-        showMessage('保存失败', 'error');
-      }
     }
-    
+
     // 批量生成测试用例
     function generateTestcases() {
-      // 优先使用选中的种子
-      const checkedBoxes = document.querySelectorAll('.seed-select-checkbox:checked');
-      const seedConfigs = [];
-      
-      if (checkedBoxes.length > 0) {
-        // 如果有选中的种子，只使用选中的
-        checkedBoxes.forEach(cb => {
-          const seedId = cb.dataset.seedId;
-          const nInput = document.querySelector(`.seed-n-input[data-seed-id="${seedId}"]`);
-          const n = parseInt(nInput.value);
-          if (n > 0) {
-            seedConfigs.push({seed_id: parseInt(seedId), n: n});
-          }
-        });
-        
-        if (seedConfigs.length === 0) {
-          showMessage('选中的种子生成数量必须大于0', 'error');
-          return;
-        }
-      } else {
-        // 如果没有选中，使用所有生成数量>0的种子
-        const nInputs = document.querySelectorAll('.seed-n-input');
-        nInputs.forEach(input => {
-          const n = parseInt(input.value);
-          if (n > 0) {
-            const seedId = input.dataset.seedId;
-            seedConfigs.push({seed_id: parseInt(seedId), n: n});
-          }
-        });
-        
-        if (seedConfigs.length === 0) {
-          showMessage('请至少为一个种子设置生成数量（大于0）或选中种子', 'error');
-          return;
-        }
-      }
-      
-      const formData = new FormData();
-      formData.append('level2_id', currentLevel2Id);
-      formData.append('seed_configs', JSON.stringify(seedConfigs));
-      formData.append('prompt', '');
-      formData.append('temperature', document.getElementById('temperature').value);
-      formData.append('top_p', document.getElementById('topP').value);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      
-      fetch('/Generate_testcases/api/workspace-generate/', {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          showMessage(data.error, 'error');
+        // 优先使用选中的种子
+        const checkedBoxes = document.querySelectorAll('.seed-select-checkbox:checked');
+        const seedConfigs = [];
+
+        if (checkedBoxes.length > 0) {
+            // 如果有选中的种子，只使用选中的
+            checkedBoxes.forEach(cb => {
+                const seedId = cb.dataset.seedId;
+                const nInput = document.querySelector(`.seed-n-input[data-seed-id="${seedId}"]`);
+                const n = parseInt(nInput.value);
+                if (n > 0) {
+                    seedConfigs.push({seed_id: parseInt(seedId), n: n});
+                }
+            });
+
+            if (seedConfigs.length === 0) {
+                showMessage('选中的种子生成数量必须大于0', 'error');
+                return;
+            }
         } else {
-          showMessage(data.message, 'success');
-          setTimeout(() => {
-            window.location.href = `/Generate_testcases/level2/${data.level2_id}/`;
-          }, 1000);
+            // 如果没有选中，使用所有生成数量>0的种子
+            const nInputs = document.querySelectorAll('.seed-n-input');
+            nInputs.forEach(input => {
+                const n = parseInt(input.value);
+                if (n > 0) {
+                    const seedId = input.dataset.seedId;
+                    seedConfigs.push({seed_id: parseInt(seedId), n: n});
+                }
+            });
+
+            if (seedConfigs.length === 0) {
+                showMessage('请至少为一个种子设置生成数量（大于0）或选中种子', 'error');
+                return;
+            }
         }
-      })
-      .catch(err => showMessage('生成失败', 'error'));
+
+        const formData = new FormData();
+        formData.append('level2_id', currentLevel2Id);
+        formData.append('seed_configs', JSON.stringify(seedConfigs));
+        formData.append('prompt', '');
+        formData.append('temperature', document.getElementById('temperature').value);
+        formData.append('top_p', document.getElementById('topP').value);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        fetch('/Generate_testcases/api/workspace-generate/', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                } else {
+                    showMessage(data.message, 'success');
+                    setTimeout(() => {
+                        window.location.href = `/Generate_testcases/level2/${data.level2_id}/`;
+                    }, 1000);
+                }
+            })
+            .catch(err => showMessage('生成失败', 'error'));
     }
-    
+
     // 全选/取消全选
     let allSelected = false;
+
     function toggleSelectAll() {
-      allSelected = !allSelected;
-      const checkboxes = document.querySelectorAll('.seed-select-checkbox');
-      checkboxes.forEach(cb => {
-        cb.checked = allSelected;
-        toggleSeedSelection(cb.dataset.seedId);
-      });
-      
-      const btn = document.getElementById('selectAllBtn');
-      btn.textContent = allSelected ? '取消全选' : '全选';
-      
-      updateBatchDeleteBtn();
+        allSelected = !allSelected;
+        const checkboxes = document.querySelectorAll('.seed-select-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = allSelected;
+            toggleSeedSelection(cb.dataset.seedId);
+        });
+
+        const btn = document.getElementById('selectAllBtn');
+        btn.textContent = allSelected ? '取消全选' : '全选';
+
+        updateBatchDeleteBtn();
     }
-    
+
     // 切换种子选中状态
     function toggleSeedSelection(seedId) {
-      const row = document.querySelector(`tr[data-seed-id="${seedId}"]`);
-      const checkbox = document.querySelector(`.seed-select-checkbox[data-seed-id="${seedId}"]`);
-      
-      if (checkbox.checked) {
-        row.classList.add('selected');
-      } else {
-        row.classList.remove('selected');
-      }
-      
-      updateBatchDeleteBtn();
+        const row = document.querySelector(`tr[data-seed-id="${seedId}"]`);
+        const checkbox = document.querySelector(`.seed-select-checkbox[data-seed-id="${seedId}"]`);
+
+        if (checkbox.checked) {
+            row.classList.add('selected');
+        } else {
+            row.classList.remove('selected');
+        }
+
+        updateBatchDeleteBtn();
     }
-    
+
     // 更新批量删除按钮状态
     function updateBatchDeleteBtn() {
-      const checkedCount = document.querySelectorAll('.seed-select-checkbox:checked').length;
-      const btn = document.getElementById('batchDeleteBtn');
-      btn.disabled = checkedCount === 0;
-      btn.textContent = checkedCount > 0 ? `批量删除 (${checkedCount})` : '批量删除';
+        const checkedCount = document.querySelectorAll('.seed-select-checkbox:checked').length;
+        const btn = document.getElementById('batchDeleteBtn');
+        btn.disabled = checkedCount === 0;
+        btn.textContent = checkedCount > 0 ? `批量删除 (${checkedCount})` : '批量删除';
     }
-    
+
     // 从单个种子生成测试用例
     async function generateFromSeed(seedId) {
-      const nInput = document.querySelector(`.seed-n-input[data-seed-id="${seedId}"]`);
-      const n = parseInt(nInput.value);
-      
-      if (n <= 0) {
-        showMessage('请设置生成数量大于0', 'error');
-        return;
-      }
-      
-      const seedConfigs = [{seed_id: seedId, n: n}];
-      
-      const formData = new FormData();
-      formData.append('level2_id', currentLevel2Id);
-      formData.append('seed_configs', JSON.stringify(seedConfigs));
-      formData.append('prompt', '');
-      formData.append('temperature', document.getElementById('temperature').value);
-      formData.append('top_p', document.getElementById('topP').value);
-      formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-      
-      try {
-        const response = await fetch('/Generate_testcases/api/workspace-generate/', {
-          method: 'POST',
-          body: formData
-        });
-        const data = await response.json();
-        
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(data.message, 'success');
-          setTimeout(() => {
-            window.location.href = `/Generate_testcases/level2/${data.level2_id}/`;
-          }, 1000);
+        const nInput = document.querySelector(`.seed-n-input[data-seed-id="${seedId}"]`);
+        const n = parseInt(nInput.value);
+
+        if (n <= 0) {
+            showMessage('请设置生成数量大于0', 'error');
+            return;
         }
-      } catch (err) {
-        showMessage('生成失败', 'error');
-      }
+
+        const seedConfigs = [{seed_id: seedId, n: n}];
+
+        const formData = new FormData();
+        formData.append('level2_id', currentLevel2Id);
+        formData.append('seed_configs', JSON.stringify(seedConfigs));
+        formData.append('prompt', '');
+        formData.append('temperature', document.getElementById('temperature').value);
+        formData.append('top_p', document.getElementById('topP').value);
+        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+        try {
+            const response = await fetch('/Generate_testcases/api/workspace-generate/', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage(data.message, 'success');
+                setTimeout(() => {
+                    window.location.href = `/Generate_testcases/level2/${data.level2_id}/`;
+                }, 1000);
+            }
+        } catch (err) {
+            showMessage('生成失败', 'error');
+        }
     }
-    
+
     // 编辑种子内容
     function editSeedContent(seedId) {
-      const contentDiv = document.querySelector(`.seed-content[data-seed-id="${seedId}"]`);
-      const editBtn = document.querySelector(`.seed-action-btn[data-seed-id="${seedId}"][onclick*="editSeedContent"]`);
-      
-      if (contentDiv.contentEditable === 'true') {
-        // 保存模式
-        const newText = contentDiv.textContent.trim();
-        
-        if (!newText) {
-          showMessage('种子内容不能为空', 'error');
-          return;
+        const contentDiv = document.querySelector(`.seed-content[data-seed-id="${seedId}"]`);
+        const editBtn = document.querySelector(`.seed-action-btn[data-seed-id="${seedId}"][onclick*="editSeedContent"]`);
+
+        if (contentDiv.contentEditable === 'true') {
+            // 保存模式
+            const newText = contentDiv.textContent.trim();
+
+            if (!newText) {
+                showMessage('种子内容不能为空', 'error');
+                return;
+            }
+
+            // 保存到数据库
+            saveSeedContent(seedId, newText, contentDiv, editBtn);
+        } else {
+            // 编辑模式
+            contentDiv.contentEditable = true;
+            contentDiv.focus();
+            contentDiv.classList.add('editing');
+            editBtn.textContent = '保存';
         }
-        
-        // 保存到数据库
-        saveSeedContent(seedId, newText, contentDiv, editBtn);
-      } else {
-        // 编辑模式
-        contentDiv.contentEditable = true;
-        contentDiv.focus();
-        contentDiv.classList.add('editing');
-        editBtn.textContent = '保存';
-      }
     }
-    
+
     // 保存种子内容
     async function saveSeedContent(seedId, text, contentDiv, editBtn) {
-      try {
-        const response = await fetch('/Generate_testcases/api/update-seed/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-          },
-          body: JSON.stringify({ id: seedId, text: text })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage('保存成功', 'success');
-          contentDiv.contentEditable = false;
-          contentDiv.classList.remove('editing');
-          contentDiv.dataset.original = text;
-          editBtn.textContent = '编辑';
+        try {
+            const response = await fetch('/Generate_testcases/api/update-seed/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({id: seedId, text: text})
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('保存成功', 'success');
+                contentDiv.contentEditable = false;
+                contentDiv.classList.remove('editing');
+                contentDiv.dataset.original = text;
+                editBtn.textContent = '编辑';
+            }
+        } catch (err) {
+            showMessage('保存失败', 'error');
         }
-      } catch (err) {
-        showMessage('保存失败', 'error');
-      }
     }
-    
+
     // 复制种子文本
     function copySeedText(seedId) {
-      const contentDiv = document.querySelector(`.seed-content[data-seed-id="${seedId}"]`);
-      const text = contentDiv.textContent;
-      
-      navigator.clipboard.writeText(text).then(() => {
-        showMessage('已复制到剪贴板', 'success');
-      }).catch(() => {
-        showMessage('复制失败', 'error');
-      });
+        const contentDiv = document.querySelector(`.seed-content[data-seed-id="${seedId}"]`);
+        const text = contentDiv.textContent;
+
+        navigator.clipboard.writeText(text).then(() => {
+            showMessage('已复制到剪贴板', 'success');
+        }).catch(() => {
+            showMessage('复制失败', 'error');
+        });
     }
-    
+
     // 删除单个种子
     async function deleteSingleSeed(seedId) {
-      if (!confirm('确定要删除这个种子测试用例吗？')) {
-        return;
-      }
-      
-      try {
-        const response = await fetch('/Generate_testcases/api/delete-items/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-          },
-          body: JSON.stringify({
-            level1_ids: [],
-            level2_ids: [],
-            seed_ids: [seedId]
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage('删除成功', 'success');
-          // 重新加载种子列表
-          loadSeedList(currentLevel2Id);
+        if (!confirm('确定要删除这个种子测试用例吗？')) {
+            return;
         }
-      } catch (err) {
-        showMessage('删除失败', 'error');
-      }
+
+        try {
+            const response = await fetch('/Generate_testcases/api/delete-items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    level1_ids: [],
+                    level2_ids: [],
+                    seed_ids: [seedId]
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage('删除成功', 'success');
+                // 重新加载种子列表
+                loadSeedList(currentLevel2Id);
+            }
+        } catch (err) {
+            showMessage('删除失败', 'error');
+        }
     }
-    
+
     // 批量删除种子
     async function batchDeleteSeeds() {
-      const checkedBoxes = document.querySelectorAll('.seed-select-checkbox:checked');
-      
-      if (checkedBoxes.length === 0) {
-        showMessage('请先选择要删除的种子', 'error');
-        return;
-      }
-      
-      if (!confirm(`确定要删除选中的 ${checkedBoxes.length} 个种子测试用例吗？`)) {
-        return;
-      }
-      
-      const seedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.dataset.seedId));
-      
-      try {
-        const response = await fetch('/Generate_testcases/api/delete-items/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}'
-          },
-          body: JSON.stringify({
-            level1_ids: [],
-            level2_ids: [],
-            seed_ids: seedIds
-          })
-        });
-        
-        const data = await response.json();
-        
-        if (data.error) {
-          showMessage(data.error, 'error');
-        } else {
-          showMessage(`成功删除 ${checkedBoxes.length} 个种子`, 'success');
-          // 重新加载种子列表
-          loadSeedList(currentLevel2Id);
-          // 重置全选状态
-          allSelected = false;
-          document.getElementById('selectAllBtn').textContent = '全选';
+        const checkedBoxes = document.querySelectorAll('.seed-select-checkbox:checked');
+
+        if (checkedBoxes.length === 0) {
+            showMessage('请先选择要删除的种子', 'error');
+            return;
         }
-      } catch (err) {
-        showMessage('删除失败', 'error');
-      }
+
+        if (!confirm(`确定要删除选中的 ${checkedBoxes.length} 个种子测试用例吗？`)) {
+            return;
+        }
+
+        const seedIds = Array.from(checkedBoxes).map(cb => parseInt(cb.dataset.seedId));
+
+        try {
+            const response = await fetch('/Generate_testcases/api/delete-items/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    level1_ids: [],
+                    level2_ids: [],
+                    seed_ids: seedIds
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                showMessage(data.error, 'error');
+            } else {
+                showMessage(`成功删除 ${checkedBoxes.length} 个种子`, 'success');
+                // 重新加载种子列表
+                loadSeedList(currentLevel2Id);
+                // 重置全选状态
+                allSelected = false;
+                document.getElementById('selectAllBtn').textContent = '全选';
+            }
+        } catch (err) {
+            showMessage('删除失败', 'error');
+        }
     }
-    
+
     // 显示消息
     function showMessage(text, type) {
-      const msg = document.getElementById('message');
-      msg.textContent = text;
-      msg.className = `message ${type} show`;
-      setTimeout(() => {
-        msg.classList.remove('show');
-      }, 3000);
+        const msg = document.getElementById('message');
+        msg.textContent = text;
+        msg.className = `message ${type} show`;
+        setTimeout(() => {
+            msg.classList.remove('show');
+        }, 3000);
     }
-    
+
     // 点击模态框外部关闭
     document.querySelectorAll('.modal').forEach(modal => {
-      modal.addEventListener('click', function(e) {
-        if (e.target === this) {
-          this.classList.remove('show');
-        }
-      });
+        modal.addEventListener('click', function (e) {
+            if (e.target === this) {
+                this.classList.remove('show');
+            }
+        });
     });
-  </script>
+
+    function triggerImport() {
+        document.getElementById('importFileInput').click();
+    }
+
+    async function uploadImportFile(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        try {
+            const fd = new FormData();
+            fd.append('file', file);
+
+            const resp = await fetch('api/import-excel/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: fd
+            });
+
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || !data.ok) {
+                alert((data && data.msg) ? data.msg : '导入失败');
+                return;
+            }
+
+            const s = data.stats || {};
+            alert(`导入成功！
+新增一级功能：${s.created_level1 || 0}
+新增二级功能：${s.created_level2 || 0}
+更新二级prompt：${s.updated_level2_prompt || 0}
+新增种子：${s.created_seed || 0}
+跳过行：${s.skipped_rows || 0}`);
+
+            // 刷新界面，让左侧一级功能/二级/种子重新渲染
+            window.location.reload();
+        } catch (e) {
+            alert('导入异常：' + e);
+        } finally {
+            // 允许重复选择同一个文件也能触发 onchange
+            event.target.value = '';
+        }
+    }
+
+</script>
 </body>
 </html>

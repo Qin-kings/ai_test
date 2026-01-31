@@ -23,4 +23,7 @@ urlpatterns = [
     path("api/regenerate-item/", views.regenerate_item, name="regenerate_item"),
     path("api/save-all-edits/", views.save_all_edits, name="save_all_edits"),
     path("api/save-to-final/", views.save_to_final, name="save_to_final"),
+    # urls.py 里 urlpatterns 中追加
+    path('api/import-excel/', views.import_excel_to_db, name='import_excel_to_db'),
+
 ]

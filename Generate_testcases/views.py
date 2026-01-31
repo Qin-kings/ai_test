@@ -9,6 +9,7 @@ from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.conf import settings
 
 from .models import (
     FeatureLevel1, FeatureLevel2, TestCaseSeed, 
@@ -19,7 +20,16 @@ from .forms import (
     FeatureLevel1Form, FeatureLevel2Form, SeedSelectionForm,
     GenerationSessionForm, GenerationItemFormSet, SaveCaseSetForm, TestCaseSeedForm
 )
+from .llm_client import generate_cases_for_seed, LLMError
 
+# views.py 末尾追加
+# from django.http import JsonResponse
+# from django.views.decorators.http import require_http_methods
+# from django.db import transaction
+
+from openpyxl import load_workbook
+
+from .models import FeatureLevel1, FeatureLevel2, TestCaseSeed
 
 def testcase_workspace(request):
     """
@@ -141,35 +151,85 @@ def create_or_select_scenario(request):
                     seed_form = SeedSelectionForm(level2=level2)
                 else:
                     with transaction.atomic():
+                        # # 创建生成会话
+                        # session = session_form.save(commit=False)
+                        # session.level2 = level2
+                        # session.model_name = "mock-model"
+                        # session.status = "done"
+                        # session.created_by = request.user if request.user.is_authenticated else None
+                        # session.save()
+                        #
+                        # # 为每个选中的种子创建配置并生成用例
+                        # idx = 0
+                        # for seed, n in selected_seeds:
+                        #     # 创建种子配置
+                        #     GenerationSeedConfig.objects.create(
+                        #         session=session,
+                        #         seed=seed,
+                        #         n=n
+                        #     )
+                        #
+                        #     # 生成用例（mock）
+                        #     base = seed.text[:50] + "…" if len(seed.text) > 50 else seed.text
+                        #     effective_prompt = session.effective_prompt
+                        #     for i in range(n):
+                        #         GenerationItem.objects.create(
+                        #             session=session,
+                        #             idx=idx,
+                        #             raw_text=f"[{level2.name}] 泛化用例 {idx+1} | seed={base} | prompt={effective_prompt[:30] if effective_prompt else 'default'}",
+                        #         )
+                        #         idx += 1
                         # 创建生成会话
                         session = session_form.save(commit=False)
                         session.level2 = level2
-                        session.model_name = "mock-model"
-                        session.status = "done"
+
+                        # 你要求“只有一个prompt”：这里以 session.prompt 为准（来自前端提交）
+                        # session_form 已包含 prompt 字段 :contentReference[oaicite:10]{index=10}
+
+                        session.model_name = "your-llm-model"  # 这里写你实际模型名/渠道名
+                        session.status = "draft"
                         session.created_by = request.user if request.user.is_authenticated else None
                         session.save()
-                        
-                        # 为每个选中的种子创建配置并生成用例
+
                         idx = 0
-                        for seed, n in selected_seeds:
-                            # 创建种子配置
-                            GenerationSeedConfig.objects.create(
-                                session=session,
-                                seed=seed,
-                                n=n
-                            )
-                            
-                            # 生成用例（mock）
-                            base = seed.text[:50] + "…" if len(seed.text) > 50 else seed.text
-                            effective_prompt = session.effective_prompt
-                            for i in range(n):
-                                GenerationItem.objects.create(
-                                    session=session,
-                                    idx=idx,
-                                    raw_text=f"[{level2.name}] 泛化用例 {idx+1} | seed={base} | prompt={effective_prompt[:30] if effective_prompt else 'default'}",
+                        try:
+                            for seed, n in selected_seeds:
+                                GenerationSeedConfig.objects.create(session=session, seed=seed, n=n)
+
+                                # === 真实大模型调用 ===
+                                prompt = (session.prompt or "").strip()  # 你定义的“唯一prompt”
+                                outputs = generate_cases_by_llm(
+                                    level1_name=level1.name,
+                                    level2_name=level2.name,
+                                    prompt=prompt,
+                                    seed_text=seed.text,
+                                    n=n,
+                                    temperature=session.temperature,
+                                    top_p=session.top_p,
                                 )
-                                idx += 1
-                    
+
+                                # outputs 必须是 list[str]，长度最好==n（不足就按实际写入）
+                                for text in outputs:
+                                    text = (text or "").strip()
+                                    if not text:
+                                        continue
+                                    GenerationItem.objects.create(
+                                        session=session,
+                                        seed=seed,  # ✅ 关键：补上seed关联，否则结果页按种子分组会丢 :contentReference[oaicite:11]{index=11}
+                                        idx=idx,
+                                        raw_text=text,  # ✅ 真实模型输出直接写这里
+                                    )
+                                    idx += 1
+
+                            session.status = "done"
+                            session.save(update_fields=["status"])
+
+                        except Exception as e:
+                            # 失败要落库，方便前端提示/排查
+                            session.status = "failed"
+                            session.save(update_fields=["status"])
+                            raise
+
                     messages.success(request, f"生成完成！共生成 {idx} 条用例（mock）")
                     return redirect(reverse("Generate_testcases:level2_detail", args=[level2.id]))
             else:
@@ -211,7 +271,7 @@ def get_level2_list(request):
     level1_id = request.GET.get("level1_id")
     if not level1_id:
         return JsonResponse({"error": "缺少level1_id参数"}, status=400)
-    
+
     try:
         level1 = FeatureLevel1.objects.get(id=level1_id)
         level2_list = FeatureLevel2.objects.filter(level1=level1).order_by("name")
@@ -317,80 +377,252 @@ def add_seed(request):
     })
 
 
+# @require_http_methods(["POST"])
+# def workspace_generate(request):
+#     """工作台生成测试用例"""
+#     level2_id = request.POST.get("level2_id")
+#     seed_configs = request.POST.get("seed_configs")  # JSON格式: [{"seed_id": 1, "n": 5}, ...]
+#     prompt = request.POST.get("prompt", "").strip()
+#     temperature = float(request.POST.get("temperature", 0.7))
+#     top_p = float(request.POST.get("top_p", 1.0))
+#
+#     if not level2_id:
+#         return JsonResponse({"error": "缺少二级功能ID"}, status=400)
+#     if not seed_configs:
+#         return JsonResponse({"error": "请至少选择一个种子测试用例"}, status=400)
+#
+#     try:
+#         import json
+#         seed_configs = json.loads(seed_configs)
+#
+#         print("### workspace_generate: seed_configs_len =", len(seed_configs))
+#         print("### workspace_generate: seed_configs =", seed_configs[:5], "...")
+#
+#     except:
+#         return JsonResponse({"error": "种子配置格式错误"}, status=400)
+#
+#     try:
+#         level2 = FeatureLevel2.objects.get(id=level2_id)
+#     except FeatureLevel2.DoesNotExist:
+#         return JsonResponse({"error": "二级功能不存在"}, status=404)
+#
+#     with transaction.atomic():
+#         # 创建生成会话
+#         session = GenerationSession.objects.create(
+#             level2=level2,
+#             prompt=prompt or None,
+#             model_name="mock-model",
+#             temperature=temperature,
+#             top_p=top_p,
+#             status="done",
+#             created_by=request.user if request.user.is_authenticated else None
+#         )
+#
+#         # 为每个种子创建配置并生成用例
+#         idx = 0
+#         for config in seed_configs:
+#             seed_id = config.get("seed_id")
+#             n = config.get("n", 5)
+#
+#             try:
+#                 seed = TestCaseSeed.objects.get(id=seed_id, level2=level2)
+#             except TestCaseSeed.DoesNotExist:
+#                 continue
+#
+#             # 创建种子配置
+#             # GenerationSeedConfig.objects.create(
+#             #     session=session,
+#             #     seed=seed,
+#             #     n=n
+#             # )
+#             GenerationSeedConfig.objects.update_or_create(
+#                 session=session,
+#                 seed=seed,
+#                 defaults={"n": n},
+#             )
+#
+#             # # 生成用例（mock）
+#             # base = seed.text[:50] + "…" if len(seed.text) > 50 else seed.text
+#             # effective_prompt = session.effective_prompt
+#             # for i in range(n):
+#             #     GenerationItem.objects.create(
+#             #         session=session,
+#             #         seed=seed,  # 关联种子
+#             #         idx=idx,
+#             #         raw_text=f"[{level2.name}] 泛化用例 {idx+1} | seed={base} | prompt={effective_prompt[:30] if effective_prompt else 'default'}",
+#             #     )
+#             #     idx += 1
+#             # 创建生成会话（不再保存 session.prompt；提示词只来自 level2.prompt）
+#             session = GenerationSession.objects.create(
+#                 level2=level2,
+#                 prompt=None,
+#                 model_name = getattr(settings, "ZHIPU_MODEL", "glm-4"),
+#                 temperature=temperature,
+#                 top_p=top_p,
+#                 status="draft",
+#                 created_by=request.user if request.user.is_authenticated else None
+#             )
+#
+#             idx = 0
+#             try:
+#                 level1_name = level2.level1.name  # 注意：level2 需要能拿到 level1；如果没 select_related，也可以 level2.level1.name
+#                 level2_name = level2.name
+#                 scenario_prompt = level2.prompt or ""
+#
+#                 for config in seed_configs:
+#                     seed_id = config.get("seed_id")
+#                     n = int(config.get("n", 5) or 0)
+#                     if n <= 0:
+#                         continue
+#
+#                     try:
+#                         seed = TestCaseSeed.objects.get(id=seed_id, level2=level2)
+#                     except TestCaseSeed.DoesNotExist:
+#                         continue
+#
+#                     GenerationSeedConfig.objects.create(session=session, seed=seed, n=n)
+#
+#                     # ✅ 真实调用大模型：一次 seed 生成 n 条
+#                     cases = generate_cases_for_seed(
+#                         level1_name=level1_name,
+#                         level2_name=level2_name,
+#                         seed_text=seed.text,
+#                         prompt=scenario_prompt,  # 只有这一个提示词（来自二级功能）
+#                         n=n,
+#                         temperature=temperature,
+#                         top_p=top_p,
+#                         idx = idx,
+#                     )
+#
+#                     for text in cases:
+#                         GenerationItem.objects.create(
+#                             session=session,
+#                             seed=seed,
+#                             idx=idx,
+#                             raw_text=text,
+#                         )
+#                         idx += 1
+#
+#                 session.status = "done"
+#                 session.save(update_fields=["status"])
+#
+#             except LLMError as e:
+#                 session.status = "failed"
+#                 session.save(update_fields=["status"])
+#                 return JsonResponse({"error": str(e)}, status=500)
+#             except Exception as e:
+#                 session.status = "failed"
+#                 session.save(update_fields=["status"])
+#                 return JsonResponse({"error": f"生成失败: {str(e)}"}, status=500)
+#
+#     return JsonResponse({
+#         "session_id": session.id,
+#         "level2_id": level2.id,
+#         "total": idx,
+#         "message": f"生成完成！共生成 {idx} 条用例"
+#     })
+
 @require_http_methods(["POST"])
 def workspace_generate(request):
-    """工作台生成测试用例"""
     level2_id = request.POST.get("level2_id")
-    seed_configs = request.POST.get("seed_configs")  # JSON格式: [{"seed_id": 1, "n": 5}, ...]
-    prompt = request.POST.get("prompt", "").strip()
+    seed_configs = request.POST.get("seed_configs")
     temperature = float(request.POST.get("temperature", 0.7))
     top_p = float(request.POST.get("top_p", 1.0))
-    
+
     if not level2_id:
         return JsonResponse({"error": "缺少二级功能ID"}, status=400)
     if not seed_configs:
         return JsonResponse({"error": "请至少选择一个种子测试用例"}, status=400)
-    
+
+    import json
     try:
-        import json
         seed_configs = json.loads(seed_configs)
-    except:
+        print("### workspace_generate: seed_configs_len =", len(seed_configs))
+        print("### workspace_generate: seed_configs =", seed_configs[:5], "...")
+    except Exception:
         return JsonResponse({"error": "种子配置格式错误"}, status=400)
-    
+
     try:
-        level2 = FeatureLevel2.objects.get(id=level2_id)
+        level2 = FeatureLevel2.objects.select_related("level1").get(id=level2_id)
     except FeatureLevel2.DoesNotExist:
         return JsonResponse({"error": "二级功能不存在"}, status=404)
-    
+
+    # ✅ 只用 level2.prompt 作为唯一 prompt
+    scenario_prompt = level2.prompt or ""
+    level1_name = level2.level1.name
+    level2_name = level2.name
+
     with transaction.atomic():
-        # 创建生成会话
+        # ✅ 只创建一次 session
         session = GenerationSession.objects.create(
             level2=level2,
-            prompt=prompt or None,
-            model_name="mock-model",
+            prompt=None,
+            model_name=getattr(settings, "ZHIPU_MODEL", "glm-4"),
             temperature=temperature,
             top_p=top_p,
-            status="done",
+            status="draft",
             created_by=request.user if request.user.is_authenticated else None
         )
-        
-        # 为每个种子创建配置并生成用例
+
         idx = 0
-        for config in seed_configs:
-            seed_id = config.get("seed_id")
-            n = config.get("n", 5)
-            
-            try:
-                seed = TestCaseSeed.objects.get(id=seed_id, level2=level2)
-            except TestCaseSeed.DoesNotExist:
-                continue
-            
-            # 创建种子配置
-            GenerationSeedConfig.objects.create(
-                session=session,
-                seed=seed,
-                n=n
-            )
-            
-            # 生成用例（mock）
-            base = seed.text[:50] + "…" if len(seed.text) > 50 else seed.text
-            effective_prompt = session.effective_prompt
-            for i in range(n):
-                GenerationItem.objects.create(
+        try:
+            for config in seed_configs:
+                seed_id = config.get("seed_id")
+                n = int(config.get("n", 0) or 0)
+                if not seed_id or n <= 0:
+                    continue
+
+                try:
+                    seed = TestCaseSeed.objects.get(id=seed_id, level2=level2)
+                except TestCaseSeed.DoesNotExist:
+                    continue
+
+                # ✅ 不会触发唯一键冲突
+                GenerationSeedConfig.objects.update_or_create(
                     session=session,
-                    seed=seed,  # 关联种子
-                    idx=idx,
-                    raw_text=f"[{level2.name}] 泛化用例 {idx+1} | seed={base} | prompt={effective_prompt[:30] if effective_prompt else 'default'}",
+                    seed=seed,
+                    defaults={"n": n},
                 )
-                idx += 1
-    
+
+                # ✅ 只调用一次大模型
+                cases = generate_cases_for_seed(
+                    level1_name=level1_name,
+                    level2_name=level2_name,
+                    seed_text=seed.text,
+                    prompt=scenario_prompt,
+                    n=n,
+                    temperature=temperature,
+                    top_p=top_p,
+                    idx=idx,
+                )
+
+                for text in cases:
+                    GenerationItem.objects.create(
+                        session=session,
+                        seed=seed,
+                        idx=idx,
+                        raw_text=text,
+                    )
+                    idx += 1
+
+            session.status = "done"
+            session.save(update_fields=["status"])
+
+        except LLMError as e:
+            session.status = "failed"
+            session.save(update_fields=["status"])
+            return JsonResponse({"error": str(e)}, status=500)
+        except Exception as e:
+            session.status = "failed"
+            session.save(update_fields=["status"])
+            return JsonResponse({"error": f"生成失败: {str(e)}"}, status=500)
+
     return JsonResponse({
         "session_id": session.id,
         "level2_id": level2.id,
         "total": idx,
         "message": f"生成完成！共生成 {idx} 条用例"
     })
-
 
 @require_http_methods(["POST"])
 def delete_items(request):
@@ -564,10 +796,35 @@ def regenerate_item(request):
         # 获取原始item
         original_item = GenerationItem.objects.get(id=item_id)
 
-        # Mock生成新文本（实际应该调用AI模型）
-        import random
-        seed_text = original_item.seed.text if original_item.seed else "无种子"
-        new_text = f"{seed_text} [重新生成-{random.randint(100, 999)}]"
+        # # Mock生成新文本（实际应该调用AI模型）
+        # import random
+        # seed_text = original_item.seed.text if original_item.seed else "无种子"
+        # new_text = f"{seed_text} [重新生成-{random.randint(100, 999)}]"
+        try:
+            session = original_item.session
+            level2 = session.level2
+            level1_name = level2.level1.name
+            level2_name = level2.name
+            scenario_prompt = level2.prompt or ""
+            seed_text = original_item.seed.text if original_item.seed else ""
+
+            if not seed_text:
+                return JsonResponse({"error": "该条记录没有关联种子，无法重新生成"}, status=400)
+
+            # ✅ 真实调用：生成 1 条
+            new_text = generate_cases_for_seed(
+                level1_name=level1_name,
+                level2_name=level2_name,
+                seed_text=seed_text,
+                prompt=scenario_prompt,
+                n=1,
+                temperature=session.temperature,
+                top_p=session.top_p,
+                idx='重试生成'
+
+            )[0]
+        except LLMError as e:
+            return JsonResponse({"error": str(e)}, status=500)
 
         # ⭐ 创建新记录（重新生成模式）
         new_item = GenerationItem.objects.create(
@@ -734,20 +991,20 @@ def save_to_final(request):
         return JsonResponse({"error": f"保存到最终库失败: {str(e)}"}, status=500)
 
 
-@require_http_methods(["GET"])
-def get_level2_list(request):
-    """AJAX接口：根据一级功能ID获取二级功能列表"""
-    level1_id = request.GET.get("level1_id")
-    if not level1_id:
-        return JsonResponse({"error": "缺少level1_id参数"}, status=400)
-    
-    try:
-        level1 = FeatureLevel1.objects.get(id=level1_id)
-        level2_list = FeatureLevel2.objects.filter(level1=level1).order_by("name")
-        data = [{"id": l2.id, "name": l2.name} for l2 in level2_list]
-        return JsonResponse({"level2_list": data})
-    except FeatureLevel1.DoesNotExist:
-        return JsonResponse({"error": "一级功能不存在"}, status=404)
+# @require_http_methods(["GET"])
+# def get_level2_list(request):
+#     """AJAX接口：根据一级功能ID获取二级功能列表"""
+#     level1_id = request.GET.get("level1_id")
+#     if not level1_id:
+#         return JsonResponse({"error": "缺少level1_id参数"}, status=400)
+#
+#     try:
+#         level1 = FeatureLevel1.objects.get(id=level1_id)
+#         level2_list = FeatureLevel2.objects.filter(level1=level1).order_by("name")
+#         data = [{"id": l2.id, "name": l2.name} for l2 in level2_list]
+#         return JsonResponse({"level2_list": data})
+#     except FeatureLevel1.DoesNotExist:
+#         return JsonResponse({"error": "一级功能不存在"}, status=404)
 
 
 def level2_detail(request, level2_id):
@@ -851,3 +1108,112 @@ def session_edit_and_save(request, session_id):
 
     # 未知 action
     return redirect(reverse("Generate_testcases:level2_detail", args=[session.level2_id]))
+
+
+
+
+
+@require_http_methods(["POST"])
+def import_excel_to_db(request):
+    """
+    Excel 导入规则（固定列位）：
+    - 忽略第 1 列
+    - 第 2 列：一级功能
+    - 第 3 列：二级功能
+    - 第 4 列：二级功能场景提示词 prompt（支持合并单元格向下继承）
+    - 第 5 列：种子测试用例 seed
+    说明：prompt 可以为空；seed 不继承
+    """
+    print("### import_excel_to_db FINAL VERSION (v3-safe) ###")
+
+    try:
+        f = request.FILES.get("file")
+        if not f:
+            return JsonResponse({"ok": False, "msg": "未收到文件 file"}, status=400)
+
+        if not f.name.lower().endswith(".xlsx"):
+            return JsonResponse({"ok": False, "msg": "目前只支持 .xlsx 格式"}, status=400)
+
+        try:
+            wb = load_workbook(f, data_only=True)
+            ws = wb.active
+        except Exception as e:
+            return JsonResponse({"ok": False, "msg": f"读取Excel失败：{e}"}, status=400)
+
+        def norm(v):
+            return "" if v is None else str(v).strip()
+
+        rows = list(ws.iter_rows(values_only=True))
+        if len(rows) <= 1:
+            return JsonResponse({"ok": False, "msg": "Excel中没有数据行"}, status=400)
+
+        created_l1 = created_l2 = created_seed = updated_l2_prompt = skipped = 0
+
+        # 合并单元格继承：l1/l2/prompt
+        last_l1 = ""
+        last_l2 = ""
+        last_prompt = ""
+
+        with transaction.atomic():
+            for r in rows[1:]:
+                # B/C/D/E
+                raw_l1 = norm(r[1]) if len(r) > 1 else ""
+                raw_l2 = norm(r[2]) if len(r) > 2 else ""
+                raw_prompt = norm(r[3]) if len(r) > 3 else ""   # 第4列 prompt
+                seed = norm(r[4]) if len(r) > 4 else ""         # 第5列 seed
+
+                # l1/l2 向下继承
+                l1 = raw_l1 or last_l1
+                l2 = raw_l2 or last_l2
+
+                # 必须有 l1/l2，prompt 可为空
+                if not l1 or not l2:
+                    skipped += 1
+                    continue
+
+                # prompt 向下继承（只对合并单元格有效：同一个 l1+l2 的连续行）
+                if raw_prompt:
+                    prompt = raw_prompt
+                else:
+                    prompt = last_prompt if (l1 == last_l1 and l2 == last_l2) else ""
+
+                # 更新缓存
+                last_l1, last_l2, last_prompt = l1, l2, prompt
+
+                level1, l1_created = FeatureLevel1.objects.get_or_create(name=l1)
+                if l1_created:
+                    created_l1 += 1
+
+                level2, l2_created = FeatureLevel2.objects.get_or_create(level1=level1, name=l2)
+                if l2_created:
+                    created_l2 += 1
+
+                # prompt 可为空：为空不覆盖；有值才更新
+                if prompt and (level2.prompt or "") != prompt:
+                    level2.prompt = prompt
+                    level2.save(update_fields=["prompt"])
+                    updated_l2_prompt += 1
+
+                # seed 写入（不继承；为空则跳过）
+                if seed:
+                    _, seed_created = TestCaseSeed.objects.get_or_create(level2=level2, text=seed)
+                    if seed_created:
+                        created_seed += 1
+
+        return JsonResponse({
+            "ok": True,
+            "msg": "导入成功",
+            "stats": {
+                "created_level1": created_l1,
+                "created_level2": created_l2,
+                "updated_level2_prompt": updated_l2_prompt,
+                "created_seed": created_seed,
+                "skipped_rows": skipped,
+            }
+        })
+
+    except Exception as e:
+        # ✅ 兜底：保证永远返回 HttpResponse，不会是 None
+        return JsonResponse({"ok": False, "msg": f"导入异常：{str(e)}"}, status=500)
+
+
